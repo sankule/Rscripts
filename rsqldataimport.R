@@ -1,9 +1,11 @@
-install.packages("RJDBC",dep=TRUE)
+# install.packages("RJDBC",dep=TRUE)
 library(RJDBC)
 
+# jdbc sql connector 
 drv <- JDBC("com.mysql.jdbc.Driver","/usr/local/jdbc/mysql-connector-java-5.0.8-bin.jar",
             identifier.quote="`")
 
+# connection
 conn <- dbConnect(drv, "jdbc:mysql://localhost/dbname", "username", "password")
 
 dbListTables(conn)
