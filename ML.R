@@ -288,18 +288,6 @@ dataset = read.csv('Part 2 - Regression/Section 7 - Support Vector Regression (S
 dataset
 dataset = dataset[2:3]
 
-# Splitting the dataset into the Training set and Test set
-# # install.packages('caTools')
-# library(caTools)
-# set.seed(123)
-# split = sample.split(dataset$Salary, SplitRatio = 2/3)
-# training_set = subset(dataset, split == TRUE)
-# test_set = subset(dataset, split == FALSE)
-
-# Feature Scaling
-# training_set = scale(training_set)
-# test_set = scale(test_set)
-
 # Fitting SVR to the dataset
 # install.packages('e1071')
 library(e1071)
@@ -326,6 +314,8 @@ ggplot() +
   xlab('Level') +
   ylab('Salary')
 
+# CEO salary being considered outlier by the model is not considered in the prediction
+
 # Visualising the SVR results (for higher resolution and smoother curve)
 # install.packages('ggplot2')
 library(ggplot2)
@@ -342,25 +332,75 @@ ggplot() +
 
 
 
+                                    #### Decision Trees ####
 
-                                    #### Decision Tree Regression ####
 
+# CART => Classification And Regression Trees
+
+# lets say we have a scatterplot of X1 and X2. Decision trees algorithm will split the scatter into different 
+# sections(branches) one at a time based on some condition (X2 < 20 for example). 
+# splitting criteria is decided by MATHEMATICAL INFORMATION ENTROPY
+
+# In a nutshell: the split is decided by whether the split is increasing the amount of information of information 
+# we have about the points is it adding some values to groups. algorithm knows when to stop when there is 
+# no further information need to be added by splitting the leaf any further. 
+# for example: if the leaf has less that 5% of the information 
+# Final leaves are called TERMINAL LEAVES
+
+# >>>>  SPLITTING CRITERIA <<<<<< 
+
+# The core algorithm for building decision trees called ID3 by J. R. Quinlan which employs a "top-down", "greedy search" 
+# through the space of possible branches with no "backtracking". The ID3 algorithm can be used to construct a 
+# decision tree for regression by replacing Information Gain with Standard Deviation Reduction.
+
+# A decision tree is built top-down from a root node and involves partitioning the data into subsets that contain 
+# instances with similar values (homogenous). We use standard deviation to calculate the homogeneity of a numerical sample. 
+# If the numerical sample is completely homogeneous its standard deviation is zero.
+
+# A decision tree is built top-down from a root node and involves partitioning the data into subsets that contain
+# instances with similar values (homogenous). We use standard deviation to calculate the homogeneity of a numerical sample. 
+# If the numerical sample is completely homogeneous its standard deviation is zero.
+
+#     Standard Deviation (S) is for tree building (branching).
+#     Coefficient of Deviation (CV) is used to decide when to stop branching. We can use Count (n) as well.
+#     Average (Avg) is the value in the leaf nodes.
+
+# Standard deviation for two attributes (target and predictor):
+#   S(T,X) = SIGMA { p(c)*S(c)} for c in X
+#   where,
+#   S is standard deviation, T is Target, X is predictor
+
+
+# Standard Deviation Reduction (SDR)		
+#   The standard deviation reduction is based on the decrease in standard deviation after a dataset is split on an attribute. 
+#   Constructing a decision tree is all about finding attribute that returns the highest standard deviation
+#   reduction (i.e., the most homogeneous branches).
+#   SDR(T,X) = S(T) - S(T,X)
+
+
+## >>>> STEPS 
+# Step 1: The standard deviation of the target is calculated.
+# Step 2: The dataset is then split on the different attributes. The standard deviation for each branch is calculated. 
+#         The resulting standard deviation is subtracted from the standard deviation before the split. The result 
+#         is the standard deviation reduction.
+
+# Step 3: The attribute with the largest standard deviation reduction is chosen for the decision node. 
+
+# Step 4a: The dataset is divided based on the values of the selected attribute. This process is run recursively on the 
+# non-leaf branches, until all data is processed.
+
+# In practice, we need some termination criteria. For example, when coefficient of deviation (CV) for a branch becomes
+# smaller than a certain threshold (e.g., 10%) and/or when too few instances (n) remain in the branch (e.g., 3). 		
+
+# Step 4b: The related leaf node gets the average of the subset.
+
+
+
+# https://en.wikipedia.org/wiki/ID3_algorithm
 
 # Importing the dataset
 dataset = read.csv('Position_Salaries.csv')
 dataset = dataset[2:3]
-
-# Splitting the dataset into the Training set and Test set
-# # install.packages('caTools')
-# library(caTools)
-# set.seed(123)
-# split = sample.split(dataset$Salary, SplitRatio = 2/3)
-# training_set = subset(dataset, split == TRUE)
-# test_set = subset(dataset, split == FALSE)
-
-# Feature Scaling
-# training_set = scale(training_set)
-# test_set = scale(test_set)
 
 # Fitting Decision Tree Regression to the dataset
 # install.packages('rpart')
