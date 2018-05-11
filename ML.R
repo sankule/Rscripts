@@ -377,6 +377,7 @@ ggplot() +
 #   reduction (i.e., the most homogeneous branches).
 #   SDR(T,X) = S(T) - S(T,X)
 
+# Feature Scaling is not required in decision trees as it is not based on euclidean distances like other models
 
 ## >>>> STEPS 
 # Step 1: The standard deviation of the target is calculated.
@@ -394,12 +395,10 @@ ggplot() +
 
 # Step 4b: The related leaf node gets the average of the subset.
 
-
-
 # https://en.wikipedia.org/wiki/ID3_algorithm
 
 # Importing the dataset
-dataset = read.csv('Position_Salaries.csv')
+dataset = read.csv('Part 2 - Regression/Section 8 - Decision Tree Regression/Decision_Tree_Regression/Decision_Tree_Regression/Position_Salaries.csv')
 dataset = dataset[2:3]
 
 # Fitting Decision Tree Regression to the dataset
@@ -432,21 +431,31 @@ text(regressor)
 
                                                   ###### Random Forest Regression #######
 
+
+# Difference between Decision Trees and Random Forests:
+
+# The superficial answer is that Random Forest (RF) is a collection of Decision Trees (DT).
+# However, there is more to this than meets the eye. One problem that might occur with one big (deep) single DT is that it can 
+# overfit. That is the DT can “memorize” the training set the way a person might memorize an Eye Chart.
+# The point of RF is to prevent overfitting. It does this by creating random subsets of the features and building smaller (shallow) 
+# trees using the subsets and then it combines the subtrees.
+
+# The Decision tree classifiers uses greedy approach hence an attribute chooses at first step can’t be used anymore which can give 
+# better classification if used in later steps. Also it overfit the training data which can give poor results for unseen data. 
+# So, to overcome this limitation ensemble model is used. In ensemble model results from different models are combined. The result 
+# obtained from an ensemble model is usually better than the result from any one of individual models.
+# Random Forests is an ensemble classifier which uses many decision tree models to predict the result. A different subset of
+# training data is selected, with replacement to train each tree. 
+
+# A decision tree is built using the whole dataset considering all features,but in random forests a fraction of the number of rows is 
+# selected at random and a particular number of features are selected at random to train on and a decision tree is built on this subset.
+
+
 # Importing the dataset
 dataset = read.csv('Part 2 - Regression/Section 9 - Random Forest Regression/Random_Forest_Regression/Random_Forest_Regression/Position_Salaries.csv')
 dataset = dataset[2:3]
 
-# Splitting the dataset into the Training set and Test set
-# # install.packages('caTools')
-# library(caTools)
-# set.seed(123)
-# split = sample.split(dataset$Salary, SplitRatio = 2/3)
-# training_set = subset(dataset, split == TRUE)
-# test_set = subset(dataset, split == FALSE)
-
-# Feature Scaling
-# training_set = scale(training_set)
-# test_set = scale(test_set)
+# same as decision trees, as the models is not dependent on the euclidean distances we will not be doing FEATURE SCALING 
 
 # Fitting Random Forest Regression to the dataset
 # install.packages('randomForest')
@@ -454,8 +463,8 @@ library(randomForest)
 set.seed(1234)
 regressor = randomForest(x = dataset[-2],
                          y = dataset$Salary,
-                         ntree = 500)
-                        # 500 trees     
+                         ntree = 100)
+                        # 100 trees     
 summary(regressor)
 regressor
 
@@ -465,6 +474,7 @@ y_pred = predict(regressor, data.frame(Level = 6.5))
 # Visualising the Random Forest Regression results (higher resolution)
 # install.packages('ggplot2')
 library(ggplot2)
+# for granular plot
 x_grid = seq(min(dataset$Level), max(dataset$Level), 0.01)
 ggplot() +
   geom_point(aes(x = dataset$Level, y = dataset$Salary),
@@ -474,6 +484,84 @@ ggplot() +
   ggtitle('Truth or Bluff (Random Forest Regression)') +
   xlab('Level') +
   ylab('Salary')
+
+# If you encounter => Error in .Call.graphics(C_palette2, .Call(C_palette2, NULL)) : invalid graphics state
+# try running dev.off() and the plot again
+
+
+                                          #### Evaluating Regression Model Performance #####
+
+                                            ### 1. R-squared ####
+
+# residual sum of squares - RSS ->  SUM{yi - predicted(yi)^2}
+# total sum of sqaures - TSS ->  SUM{yi - mean(y)^2}
+
+# Rsquare =  1 - (RSS/TSS)
+# Rsqaure close to 1 indicates good fit
+
+                                            ### 2. Adjusted R-squared ####
+# WHY?
+# R-squared cannot determine whether the coefficient estimates and predictions are biased, which is why you must assess the residual plots
+# Adjusted R-square penalizes the model for adding variables which do not improve your existing model.
+# adjusted R squared  = 1 - {(1-R2)*(N-1)/(N-p-1)}
+# where, 
+# R2 -> sample Rsquared
+# p -> Number of Predictors
+# N -> Sample size/number of training samples 
+
+# RESIDUAL PLOTS
+# residuals should not contain any predictive information.
+
+
+                                                    ### Pros & Cons ####
+
+        # Regression Model Pros Cons
+# PRO: Linear Regression Works on any size of dataset, gives informations about relevance of features 
+# CON: The Linear Regression Assumptions
+
+        # Polynomial Regression 
+# PRO: Works on any size of dataset, works very well on non linear problems
+# CON: Need to choose the right polynomial degree for a good bias/variance tradeoff
+
+        # SVR 
+# PRO: Easily adaptable, works very well on non linear problems, not biased by outliers
+# CON: Compulsory to apply feature scaling, not well known, more difficult to understand
+ 
+        # Decision Tree Regression 
+# PRO: Interpretability, no need for feature scaling, works on both linear / nonlinear problems
+# CON: Poor results on too small datasets, overfitting can easily occur
+
+        # Random Forest Regression 
+# PRO: Powerful and accurate, good performance on many problems, including non linear
+# CON: No interpretability, overfitting can easily occur, need to choose the number of trees
+
+
+
+# each model is composed of two types of parameters:
+# 1. the parameters that are learnt, for example the coefficients in Linear Regression,
+# 2. the hyperparameters
+
+# The hyperparameters are the parameters that are not learnt and that are fixed values inside the model equations. 
+# For example, the regularization parameter lambda or the penalty parameter C are hyperparameters. So far we used the 
+# default value of these hyperparameters, and we haven't searched for their optimal value so that your model reaches 
+# even higher performance. Finding their optimal value is exactly what Parameter Tuning is about.
+
+
+                                            #### Regularization ####
+# LASSO / RIDGE / ELASTICNET # 
+
+# WHY ?
+# Regularization, significantly reduces the variance of the model, without substantial increase in its bias.
+# The GRADIENT DECSENT ALGORITHM that is applied on minimizing the COST FUNCTION
+
+# This is a form of regression, that constrains/ regularizes or shrinks the coefficient estimates towards zero. 
+# In other words, this technique discourages learning a more complex or flexible model, so as to avoid the risk ofoverfitting.
+
+# the tuning parameter λ, used in the regularization techniques, controls the impact on bias and variance.
+# As the value of λ rises, it reduces the value of coefficients and thus reducing the variance. Till a point, this increase in λ is 
+# beneficial as it is only reducing the variance(hence avoiding overfitting), without loosing any important properties in the data.
+# But after certain value, the model starts loosing important properties, giving rise to bias in the model and thus underfitting. 
+# Therefore, the value of λ should be carefully selected.
 
 
 
