@@ -566,7 +566,6 @@ ggplot() +
 
 
                                                   ######  ~~~ Classification ~~~ #####
-
 library(ggplot2)
 library(data.table)
 library(dplyr)
@@ -574,11 +573,41 @@ setwd("~/SWARIT/Udemy/Machine Learning A-Z Template Folder/Part 3 - Classificati
 
                                                   #### Logistic Regression #####
 
+# cost function is similar as we used in linear regression but its kept inside the SIGMOID FUNCTION
+# y = b0 + b1X1 + b2X2 + .....
+# p = 1 / (1 + e^-y)  -> sigmoid function
+
+# LOGIT FUNCTION
+#   p = e^y/ 1 + e^y 
+#   where p is the probability of success. This is the Logit Function
+#   log(p/1-p) is the link function. Logarithmic transformation on the outcome variable allows us to model a non-linear association in a linear way.
+#   (p/1-p) is the odds ratio. Whenever the log of odd ratio is found to be positive, the probability of success is always more than 50%. 
+
+# GENERALIZED LINEAR MODEL (GLM)
+#   The fundamental equation of generalized linear model is:
+#   g(E(y)) = α + βx1 + γx2
+#   Here, g() is the link function, E(y) is the expectation of target variable and α + βx1 + γx2 is the linear predictor 
+#   (α,β,γ to be predicted). The role of link function is to ‘link’ the expectation of y to linear predictor.
+
+# IMP POINTS TO BE NOTED:
+# 1. GLM does not assume a linear relationship between dependent and independent variables. However, it assumes a linear relationship 
+#    between link function and independent variables in logit model.
+# 2. The dependent variable need not to be normally distributed.
+# 3. It does not uses OLS (Ordinary Least Square) for parameter estimation. Instead, it uses maximum likelihood estimation (MLE).
+# 4. Errors need to be independent but not normally distributed.
+
+
+# projecting probability on y axis (Dependent Variable) gives the chances of YES/NO for that particular X value
+# y_hat (predicted value) is taken by dividing the y into two planes, usually a horizontal line: y = 0.5
+# any value below 0.5 line is taken as 0/NO and above 0.5 line is taken as 1/YES
+# probability scores - will take a look later
+
 # Importing the dataset
 dataset = read.csv('Section 14 - Logistic Regression/Logistic_Regression/Logistic_Regression/Social_Network_Ads.csv')
 head(dataset)
+# we will train only with age and salary - subsetting
 dataset = dataset[3:5]
-# Encoding the target feature as factor
+# Encoding the target feature as factor - 1 being Bought the car, 0 being Not Bought
 dataset$Purchased = factor(dataset$Purchased, levels = c(0, 1))
 
 # Splitting the dataset into the Training set and Test set
@@ -589,23 +618,29 @@ split = sample.split(dataset$Purchased, SplitRatio = 0.75)
 training_set = subset(dataset, split == TRUE)
 test_set = subset(dataset, split == FALSE)
 
-# Feature Scaling
+# Feature Scaling - scaling both age and salary
 training_set[-3] = scale(training_set[-3])
 test_set[-3] = scale(test_set[-3])
 
 # Fitting Logistic Regression to the Training set
+
+# GLM - Generalized Linear Model
+#   Logistic regression is a linear classifier - our logistic regression classifier will linearly separate our two classes of users.
+# Binomial family is used for binary DV
+
 classifier = glm(formula = Purchased ~ .,
                  family = binomial,
                  data = training_set)
-
 classifier
 # Predicting the Test set results
 prob_pred = predict(classifier, type = 'response', newdata = test_set[-3])
+# using if-else to mark 0 and 1 probability with 0.5 being the cutoff
 y_pred = ifelse(prob_pred > 0.5, 1, 0)
+summary.factor(y_pred)
 
 # Making the Confusion Matrix
 cm = table(test_set[, 3], y_pred > 0.5)
-
+cm
 # Visualising the Training set results
 # install.packages("ElemStatLearn")
 library(ElemStatLearn)
@@ -641,9 +676,116 @@ contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
 points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'springgreen3', 'tomato'))
 points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'green4', 'red3'))
 
+# As you can see that the prediction boundary is Linear, which is the essence of Logistic Regression.
+# becauase the logistic regression classifier is a linear classifier
 
 
-### TEST SVM  ####
+# LOGISTIIC MODEL PERFORMANCE # 
+# 1. AIC (Akaike Information Criteria) – The analogous metric of adjusted R² in logistic regression is AIC. AIC is the measure of 
+#    fit which penalizes model for the number of model coefficients. Therefore, we always prefer model with minimum AIC value.
+
+# 2. Null Deviance and Residual Deviance – Null Deviance indicates the response predicted by a model with nothing but an intercept.
+#    Lower the value, better the model. Residual deviance indicates the response predicted by a model on adding independent variables. 
+#    Lower the value, better the model.
+
+# 3. Confusion Matrix: It is nothing but a tabular representation of Actual vs Predicted values. This helps us to find the accuracy of the model 
+#    and avoid overfitting. This is how it looks like:
+#    calculate the ACCURACY of your model with:
+#    ACCURACY = (TP + TN)/(TP + TN + FP + FN)
+
+
+# 4. ROC Curve: Receiver Operating Characteristic(ROC) summarizes the model’s performance by evaluating the trade offs between true positive rate (sensitivity)
+#    and false positive rate(1- specificity). For plotting ROC, it is advisable to assume p > 0.5 since we are more concerned about success rate. 
+#    ROC summarizes the predictive power for all possible values of p > 0.5.  The area under curve (AUC), referred to as index of accuracy(A) or 
+#    concordance index, is a perfect performance metric for ROC curve. Higher the area under curve, better the prediction power of the model.
+
+
+
+                                                            #### K-NN  #####
+
+# Example: Given that the data has few categories. If a new data point is introduced, find the category it belongs to
+# Steps
+# 1. Choose the number K of neighbours (usually k=5 is considered a decent number)
+# 2. Take the K nearest neighbours of the new data point, according to euclidian distance
+# 3. Among these K neighbours, count the number of data points in each category (eg: category 1: 3 neighbours, category 2: 2 neighbours)
+# 4. Assign the new data point the category where you counted the most neighbours (eg: will assign to category 1, as it has more neighbours)
+#                            Model Ready!
+
+
+# K-NN is based on the euclidean distance between the points 
+# standardizing the numerical features helps in increasing the accuracy of model.
+
+# Importing the dataset
+dataset = read.csv('Section 15 - K-Nearest Neighbors (K-NN)/K_Nearest_Neighbors/K_Nearest_Neighbors/Social_Network_Ads.csv')
+# same dataset as used in logistic regression - same preprocessing 
+dataset = dataset[3:5]
+
+# Encoding the target feature as factor
+dataset$Purchased = factor(dataset$Purchased, levels = c(0, 1))
+
+# Splitting the dataset into the Training set and Test set
+library(caTools)
+set.seed(123)
+split = sample.split(dataset$Purchased, SplitRatio = 0.75)
+training_set = subset(dataset, split == TRUE)
+test_set = subset(dataset, split == FALSE)
+
+# Feature Scaling
+training_set[-3] = scale(training_set[-3])
+test_set[-3] = scale(test_set[-3])
+
+# Fitting K-NN to the Training set and Predicting the Test set results
+library(class)
+y_pred = knn(train = training_set[, -3],
+             test = test_set[, -3],
+             cl = training_set[, 3],
+             k = 5,
+             prob = TRUE)
+y_pred
+# Making the Confusion Matrix
+cm = table(test_set[, 3], y_pred)
+cm
+# as you can see - the KNN gives better results than the logistic regression
+# Visualising the Training set results
+library(ElemStatLearn)
+set = training_set
+X1 = seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.01)
+X2 = seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('Age', 'EstimatedSalary')
+y_grid = knn(train = training_set[, -3], test = grid_set, cl = training_set[, 3], k = 5)
+plot(set[, -3],
+     main = 'K-NN (Training set)',
+     xlab = 'Age', ylab = 'Estimated Salary',
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'springgreen3', 'tomato'))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'green4', 'red3'))
+
+# Visualising the Test set results
+library(ElemStatLearn)
+set = test_set
+X1 = seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.01)
+X2 = seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('Age', 'EstimatedSalary')
+y_grid = knn(train = training_set[, -3], test = grid_set, cl = training_set[, 3], k = 5)
+plot(set[, -3],
+     main = 'K-NN (Test set)',
+     xlab = 'Age', ylab = 'Estimated Salary',
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'springgreen3', 'tomato'))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'green4', 'red3'))
+
+
+                                                                  #### SVM #####
+
+# SUPPORT VECTOR MACHINES 
+
+
+
+                                                                  ### TEST SVM  ####
 data(iris)
 attach(iris)
 
