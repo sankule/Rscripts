@@ -429,7 +429,7 @@ plot(regressor)
 text(regressor)
 
 
-                                                  ###### Random Forest Regression #######
+                                                  ###### Random Forest  #######
 
 
 # Difference between Decision Trees and Random Forests:
@@ -690,9 +690,11 @@ points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'green4', 'red3'))
 
 # 3. Confusion Matrix: It is nothing but a tabular representation of Actual vs Predicted values. This helps us to find the accuracy of the model 
 #    and avoid overfitting. This is how it looks like:
-#    calculate the ACCURACY of your model with:
+#    calculate the ACCURACY/PRECISION/RECALL of your model using:
 #    ACCURACY = (TP + TN)/(TP + TN + FP + FN)
-
+#    PRECISION = TP / (TP + FP)
+#    RECALL = TP / (TP + FN)
+#    F1 SCORE = 2 * Precision * Recall / (Precision + Recall)
 
 # 4. ROC Curve: Receiver Operating Characteristic(ROC) summarizes the model’s performance by evaluating the trade offs between true positive rate (sensitivity)
 #    and false positive rate(1- specificity). For plotting ROC, it is advisable to assume p > 0.5 since we are more concerned about success rate. 
@@ -781,7 +783,536 @@ points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'green4', 'red3'))
 
                                                                   #### SVM #####
 
-# SUPPORT VECTOR MACHINES 
+# Support Vector Machine (SVM)
+
+
+# A Support Vector Machine (SVM) performs classification by finding the hyperplane that maximizes the margin between the two classes. 
+# The vectors (cases - points(few in each class)) that define the hyperplane are the support vectors.
+# means that the set of points from each class are supporting the algorithm, if we remove all other points, it wont make a difference.
+# Why vector? the location of points in N dimensional space is defined by a vector i^ j^ k^ ....
+
+# MAXIMUM MARGIN HYPERPLANE a.k.a MAXIMUM MARGIN CLASSIFIER is between the POSITIVE AND NEGATIVE HYPERPLANES
+# Positive/Negative just a convention - the classes to the right is considered the positive.
+
+# The beauty of SVM is that if the data is linearly separable, there is a unique global minimum value. An ideal SVM analysis 
+# should produce a hyperplane that completely separates the vectors (cases) into two non-overlapping classes. However, perfect
+# separation may not be possible, or it may result in a model with so many cases that the model does not classify correctly. 
+# In this situation SVM finds the hyperplane that maximizes the margin and minimizes the misclassifications.
+
+# The algorithm tries to maintain the slack variable to zero while maximizing margin. However, it does not minimize the 
+# number of misclassifications (NP-complete problem) but the sum of distances from the margin hyperplanes.
+
+# The simplest way to separate two groups of data is with a straight line (1 dimension), flat plane (2 dimensions) or an N-dimensional 
+# hyperplane. However, there are situations where a nonlinear region can separate the groups more efficiently. SVM handles this by 
+# using a kernel function (nonlinear) to map the data into a different space where a hyperplane (linear) cannot be used to do the 
+# separation. It means a non-linear function is learned by a linear learning machine in a high-dimensional feature space while the 
+# capacity of the system is controlled by a parameter that does not depend on the dimensionality of the space. This is called kernel
+# trick which means the kernel function transform the data into a higher dimensional feature space to make it possible to perform the 
+# linear separation.  
+
+# Importing the dataset
+dataset = read.csv('Section 16 - Support Vector Machine (SVM)/SVM/SVM/Social_Network_Ads.csv')
+dataset = dataset[3:5]
+
+# Encoding the target feature as factor
+dataset$Purchased = factor(dataset$Purchased, levels = c(0, 1))
+
+# Splitting the dataset into the Training set and Test set
+# install.packages('caTools')
+library(caTools)
+set.seed(123)
+split = sample.split(dataset$Purchased, SplitRatio = 0.75)
+training_set = subset(dataset, split == TRUE)
+test_set = subset(dataset, split == FALSE)
+
+# Feature Scaling
+training_set[-3] = scale(training_set[-3])
+test_set[-3] = scale(test_set[-3])
+
+# Fitting SVM to the Training set
+# install.packages('e1071')
+library(e1071)
+classifier = svm(formula = Purchased ~ .,
+                 data = training_set,
+                 type = 'C-classification',
+                 kernel = 'linear')
+
+classifier
+# Number of Support Vectors:  116 with LINEAR KERNEL
+
+# Predicting the Test set results
+y_pred = predict(classifier, newdata = test_set[-3])
+
+# Making the Confusion Matrix
+cm = table(test_set[, 3], y_pred)
+cm 
+
+# Visualising the Training set results
+library(ElemStatLearn)
+set = training_set
+X1 = seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.01)
+X2 = seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('Age', 'EstimatedSalary')
+y_grid = predict(classifier, newdata = grid_set)
+plot(set[, -3],
+     main = 'SVM (Training set)',
+     xlab = 'Age', ylab = 'Estimated Salary',
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'springgreen3', 'tomato'))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'green4', 'red3'))
+
+# Visualising the Test set results
+library(ElemStatLearn)
+set = test_set
+X1 = seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.01)
+X2 = seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('Age', 'EstimatedSalary')
+y_grid = predict(classifier, newdata = grid_set)
+plot(set[, -3], main = 'SVM (Test set)',
+     xlab = 'Age', ylab = 'Estimated Salary',
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'springgreen3', 'tomato'))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'green4', 'red3'))
+
+
+
+                                                        #### KERNEL SVM #####
+
+# What if we cant find the LINEAR HYPERPLANE ? Data is not LINEARLY SEPARABLE
+# There are a few ways to encounter this problem
+# 1. Higher Dimensional Space - adding an extra dimension and make data linearly separable
+# 2. Kernel Trick - dealing with higher dimension
+
+# As we have seen in SVM:
+#   The simplest way to separate two groups of data is with a straight line (1 dimension), flat plane (2 dimensions) or an N-dimensional 
+#   hyperplane. However, there are situations where a nonlinear region can separate the groups more efficiently. SVM handles this by 
+#   using a kernel function (nonlinear) to map the data into a different space where a hyperplane (linear) cannot be used to do the 
+#   separation. It means a non-linear function is learned by a linear learning machine in a high-dimensional feature space while the 
+#   capacity of the system is controlled by a parameter that does not depend on the dimensionality of the space. This is called "kernel
+#   trick" which means the kernel function transform the data into a higher dimensional feature space to make it possible to perform the 
+#   linear separation
+
+# If LINEAR SEPARATION is Impossible
+# How can we apply the method of increasing the dimensionality of space to make it a LINEARLY SEPARABLE DATASET in HIGHER DIMENSION ?
+
+# MAPPING FUNCTION  -  example of projecting point on a linear scale onto a parabola will make the dataset linearly separable
+# By theory we know that dataset would be LINEARLY SEPARABLE in the HIGHER DIMENSION - we just have to figure out the MAPPING FUNCTION
+# which can separate the points (or vectors) into LINEARLY SEPARABLE
+# after figuring out the mapping function and the Maximum Margin Hyperplane we project the dataset back to lower dimensional space
+# and we will get our NON-LINEAR SEPARATOR
+
+# PROBLEM?
+# Mapping data to a higher dimension then back again to lowe dimension can be highly Computing Intensive
+# For this problem we can use the KERNEL TR
+
+# Map data into new space(Higher Dimension), then take the inner product of the new vectors. The image of the inner product of the data is the 
+# inner product of the images of the data
+
+# KERNEL TRICK
+
+#  GAUSSIAN RADIAL BASIS FUNCTION:
+
+# K(x,l) = exp(-||x - l||^2 / 2*sig^2)
+# where, 
+# l  => landmark - middle of the gaussian curve
+# x => random point in the plane
+
+# The idea is to place the landmark optimally - which would separate the points based on Gaussian RBF.
+# after placing the landmark, we find the Gaussian RBF FUNCTION VALUE for all points. 
+# the points on the bell curve is projected down - creating a non-linear separator
+# with points far from the landmark being nearly zero/insignificant and points close to the landmark being significant 
+# sigma (variance = sigma^2) decide the wideness of circumference - higher the sigma - larger the circumference
+
+# For complex distribution of points we can do a combination of Gaussian RBF function, like:
+# K(x,l1) + K(x,l2)
+
+
+# Types of Kernel Functions: 
+# 1. Polynomial
+# 2. Gaussian Radial Basis Function
+# 3. Sigmoid Kernel
+
+# various other types of Kernels, find more at: http://mlkernels.readthedocs.io/en/latest/kernels.html
+
+
+# Kernel SVM Code:
+
+# Importing the dataset
+dataset = read.csv('Section 17 - Kernel SVM/Kernel-SVM/Kernel_SVM/Social_Network_Ads.csv')
+dataset = dataset[3:5]
+
+# Encoding the target feature as factor
+dataset$Purchased = factor(dataset$Purchased, levels = c(0, 1))
+
+# Splitting the dataset into the Training set and Test set
+# install.packages('caTools')
+library(caTools)
+set.seed(123)
+split = sample.split(dataset$Purchased, SplitRatio = 0.75)
+training_set = subset(dataset, split == TRUE)
+test_set = subset(dataset, split == FALSE)
+
+# Feature Scaling
+training_set[-3] = scale(training_set[-3])
+test_set[-3] = scale(test_set[-3])
+
+# Fitting Kernel SVM to the Training set
+# install.packages('e1071')
+library(e1071)
+classifier = svm(formula = Purchased ~ .,
+                 data = training_set,
+                 type = 'C-classification',
+                 kernel = 'radial')
+
+# Predicting the Test set results
+y_pred = predict(classifier, newdata = test_set[-3])
+
+# Making the Confusion Matrix
+cm = table(test_set[, 3], y_pred)
+cm # better than LINEAR SVM
+# Visualising the Training set results
+library(ElemStatLearn)
+set = training_set
+X1 = seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.01)
+X2 = seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('Age', 'EstimatedSalary')
+y_grid = predict(classifier, newdata = grid_set)
+plot(set[, -3],
+     main = 'Kernel SVM (Training set)',
+     xlab = 'Age', ylab = 'Estimated Salary',
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'springgreen3', 'tomato'))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'green4', 'red3'))
+
+# Visualising the Test set results
+library(ElemStatLearn)
+set = test_set
+X1 = seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.01)
+X2 = seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('Age', 'EstimatedSalary')
+y_grid = predict(classifier, newdata = grid_set)
+plot(set[, -3], main = 'Kernel SVM (Test set)',
+     xlab = 'Age', ylab = 'Estimated Salary',
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'springgreen3', 'tomato'))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'green4', 'red3'))
+
+
+
+                                                          #### Naive Bayes #####
+
+# BAYES THEOREM:
+
+#   P(A|B)  = P(B|A)*P(A)/P(B)
+#  Also its good to know, 
+#   P(A) = P(B|A)*P(B) + P(A|B')*P(B')
+#  Why naive? as it assumes the INDEPENDENCE (No Correlation between the variables) 
+#  which is not the case in practical situations
+
+# Note: when comparing the conditional probability of 2 classes for a given data point, the probability
+#       of a class remains the same, ie p(B) will remain the same and thus can be ignored when comparing two cases
+# eg:  p(walks | X) = P(X | walks)*P(Walks) / P(X)
+#      p(drive | X) = P(X | drive)*P(drive) / P(X)
+# here we have two classes: drive and walk, with X being the data point for which we have to find the probability
+# when comparing these two probabilities, we actually dont need P(X), as its a common term and irrespective of how
+# many classes there is going to be in the dataset, P(X) will remain the same
+
+
+# Predictors Contribution:
+#   Kononenko's information gain as a sum of information contributed by each attribute can offer an explanation on 
+#   how values of the predictors influence the class probability.
+
+#   The contribution of predictors can also be visualized by plotting "NOMOGRAMS". Nomogram plots log odds ratios for
+#   each value of each predictor. Lengths of the lines correspond to spans of odds ratios, suggesting importance 
+#   of the related predictor. It also shows impacts of individual values of the predictor.
+
+# Naive Bayes
+
+# Importing the dataset
+dataset = read.csv('Section 18 - Naive Bayes/Naive_Bayes/Naive_Bayes/Social_Network_Ads.csv')
+dataset = dataset[3:5]
+
+# Encoding the target feature as factor
+dataset$Purchased = factor(dataset$Purchased, levels = c(0, 1))
+
+# Splitting the dataset into the Training set and Test set
+# install.packages('caTools')
+library(caTools)
+set.seed(123)
+split = sample.split(dataset$Purchased, SplitRatio = 0.75)
+training_set = subset(dataset, split == TRUE)
+test_set = subset(dataset, split == FALSE)
+
+# Feature Scaling
+training_set[-3] = scale(training_set[-3])
+test_set[-3] = scale(test_set[-3])
+
+# Fitting SVM to the Training set
+# install.packages('e1071')
+library(e1071)
+classifier = naiveBayes(x = training_set[-3],
+                        y = training_set$Purchased)
+
+classifier
+# Predicting the Test set results
+y_pred = predict(classifier, newdata = test_set[-3])
+y_pred
+# Making the Confusion Matrix
+cm = table(test_set[, 3], y_pred)
+cm 
+
+# Visualising the Training set results
+library(ElemStatLearn)
+set = training_set
+X1 = seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.01)
+X2 = seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('Age', 'EstimatedSalary')
+y_grid = predict(classifier, newdata = grid_set)
+plot(set[, -3],
+     main = 'naiveBayes (Training set)',
+     xlab = 'Age', ylab = 'Estimated Salary',
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'springgreen3', 'tomato'))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'green4', 'red3'))
+
+# Visualising the Test set results
+library(ElemStatLearn)
+set = test_set
+X1 = seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.01)
+X2 = seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('Age', 'EstimatedSalary')
+y_grid = predict(classifier, newdata = grid_set)
+plot(set[, -3], main = 'naiveBayes (Test set)',
+     xlab = 'Age', ylab = 'Estimated Salary',
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'springgreen3', 'tomato'))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'green4', 'red3'))
+
+
+
+                                            #### Decision Trees ####
+
+
+# CART => Classification And Regression Trees
+
+# lets say we have a scatterplot of X1 and X2. Decision trees algorithm will split the scatter into different 
+# sections(branches) one at a time based on some condition (X2 < 20 for example). 
+# splitting criteria is decided by MATHEMATICAL INFORMATION ENTROPY
+
+# In a nutshell: the split is decided by whether the split is increasing the amount of information of information 
+# we have about the points is it adding some values to groups. algorithm knows when to stop when there is 
+# no further information need to be added by splitting the leaf any further. 
+# for example: if the leaf has less that 5% of the information 
+# Final leaves are called TERMINAL LEAVES
+
+# >>>>  SPLITTING CRITERIA <<<<<< 
+
+# Split - to maximize the number of a category in the split region (increasing the entropy?)
+
+
+# The core algorithm for building decision trees called ID3 by J. R. Quinlan which employs a "top-down", "greedy search" 
+# through the space of possible branches with no "backtracking". ID3 uses "Entropy" and "Information Gain" to construct a 
+# decision tree. In ZeroR model there is no predictor, in OneR model we try to find the single best predictor,
+# naive Bayesian includes all predictors using Bayes' rule and the independence assumptions between predictors but decision
+# tree includes all predictors with the dependence assumptions between predictors.		
+
+#                                                     Entropy:		
+# A decision tree is built top-down from a root node and involves partitioning the data into subsets that contain 
+# instances with similar values (homogenous). ID3 algorithm uses entropy to calculate the homogeneity of a sample. 
+# If the sample is completely homogeneous the entropy is zero and if the sample is an equally divided it has entropy of one.
+
+# To build a decision tree, we need to calculate two types of entropy using frequency tables as follows:
+# 1. Entropy (E) using the frequency table of one attribute:
+#     E(S) = SUM{-p*log(p)} for i in 1:c, 
+#     where c being the number of classes
+
+# 2. Entropy (E) using the frequency table of two attributes:
+#     E(T,X) = SUM{P(c)*E(c)} for c in X, and E(c) is calculated using single attribute Entropy
+
+#                                                 Information Gain:		
+# The information gain is based on the decrease in entropy after a dataset is split on an attribute. Constructing a 
+# decision tree is all about finding attribute that returns the highest information gain (i.e., the most homogeneous branches).
+
+# Step 1: Calculate entropy of the target: E(S), entropy of the single attribute
+
+# Step 2: The dataset is then split on the different attributes. The entropy for each branch is calculated. Then it is added
+# proportionally, to get total entropy for the split. The resulting entropy is subtracted from the entropy before the split.
+# The result is the Information Gain, or decrease in entropy. 
+
+# Gain:
+#   Gain(T,X) = Entropy(T) - Entropy(T,X)
+
+# Step 3: Choose attribute with the largest information gain (most decreased entropy) as the decision node, divide the dataset by 
+# its branches and repeat the same process on every branch
+
+# Step 4a: A branch with entropy of 0 is a leaf node (homogenous - subest has the same category).
+# Step 4b: A branch with entropy more than 0 needs further splitting.
+
+# Step 5: The ID3 algorithm is run recursively on the non-leaf branches, until all data is classified.
+
+# https://en.wikipedia.org/wiki/ID3_algorithm
+
+
+# Decision Tree Classification
+
+# Importing the dataset
+dataset = read.csv('Section 19 - Decision Tree Classification/Decision_Tree_Classification/Decision_Tree_Classification/Social_Network_Ads.csv')
+dataset = dataset[3:5]
+
+# Encoding the target feature as factor
+dataset$Purchased = factor(dataset$Purchased, levels = c(0, 1))
+
+# Splitting the dataset into the Training set and Test set
+# install.packages('caTools')
+library(caTools)
+set.seed(123)
+split = sample.split(dataset$Purchased, SplitRatio = 0.75)
+training_set = subset(dataset, split == TRUE)
+test_set = subset(dataset, split == FALSE)
+
+# Feature Scaling
+training_set[-3] = scale(training_set[-3])
+test_set[-3] = scale(test_set[-3])
+
+# Fitting Decision Tree Classification to the Training set
+# install.packages('rpart')
+library(rpart)
+classifier = rpart(formula = Purchased ~ .,
+                   data = training_set)
+
+# Predicting the Test set results
+y_pred = predict(classifier, newdata = test_set[-3], type = 'class')
+
+# Making the Confusion Matrix
+cm = table(test_set[, 3], y_pred)
+cm 
+# Visualising the Training set results
+library(ElemStatLearn)
+set = training_set
+X1 = seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.01)
+X2 = seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('Age', 'EstimatedSalary')
+y_grid = predict(classifier, newdata = grid_set, type = 'class')
+plot(set[, -3],
+     main = 'Decision Tree Classification (Training set)',
+     xlab = 'Age', ylab = 'Estimated Salary',
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'springgreen3', 'tomato'))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'green4', 'red3'))
+
+# Visualising the Test set results
+library(ElemStatLearn)
+set = test_set
+X1 = seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.01)
+X2 = seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('Age', 'EstimatedSalary')
+y_grid = predict(classifier, newdata = grid_set, type = 'class')
+plot(set[, -3], main = 'Decision Tree Classification (Test set)',
+     xlab = 'Age', ylab = 'Estimated Salary',
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'springgreen3', 'tomato'))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'green4', 'red3'))
+
+# Plotting the tree
+plot(classifier)
+text(classifier)
+
+
+
+
+                                                            ###### Random Forest  #######
+
+
+# Ensemle average of singular decision trees (same principle as ensemble average in molecular statistical thermodynamics)
+
+# Random Forest Classification Code:
+
+# Importing the dataset
+dataset = read.csv('Section 20 - Random Forest Classification/Random_Forest_Classification/Random_Forest_Classification/Social_Network_Ads.csv')
+dataset = dataset[3:5]
+
+# Encoding the target feature as factor
+dataset$Purchased = factor(dataset$Purchased, levels = c(0, 1))
+
+# Splitting the dataset into the Training set and Test set
+# install.packages('caTools')
+library(caTools)
+set.seed(123)
+split = sample.split(dataset$Purchased, SplitRatio = 0.75)
+training_set = subset(dataset, split == TRUE)
+test_set = subset(dataset, split == FALSE)
+
+# Feature Scaling
+training_set[-3] = scale(training_set[-3])
+test_set[-3] = scale(test_set[-3])
+
+# Fitting Random Forest Classification to the Training set
+# install.packages('randomForest')
+library(randomForest)
+set.seed(123)
+classifier = randomForest(x = training_set[-3],
+                          y = training_set$Purchased,
+                          ntree = 500)
+
+# Predicting the Test set results
+y_pred = predict(classifier, newdata = test_set[-3])
+
+# Making the Confusion Matrix
+cm = table(test_set[, 3], y_pred)
+cm
+# Visualising the Training set results
+library(ElemStatLearn)
+set = training_set
+X1 = seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.01)
+X2 = seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('Age', 'EstimatedSalary')
+y_grid = predict(classifier, grid_set)
+plot(set[, -3],
+     main = 'Random Forest Classification (Training set)',
+     xlab = 'Age', ylab = 'Estimated Salary',
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'springgreen3', 'tomato'))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'green4', 'red3'))
+
+# Visualising the Test set results
+library(ElemStatLearn)
+set = test_set
+X1 = seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.01)
+X2 = seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('Age', 'EstimatedSalary')
+y_grid = predict(classifier, grid_set)
+plot(set[, -3], main = 'Random Forest Classification (Test set)',
+     xlab = 'Age', ylab = 'Estimated Salary',
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'springgreen3', 'tomato'))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'green4', 'red3'))
+
+# Choosing the number of trees
+plot(classifier)
+
+
+
+                                                #### Evaluating Regression Model Performance #####
 
 
 
