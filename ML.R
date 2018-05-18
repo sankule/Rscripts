@@ -1312,7 +1312,182 @@ plot(classifier)
 
 
 
-                                                #### Evaluating Regression Model Performance #####
+                                              #### Evaluating Classification Model Performance #####
+
+### 1. False Positve and Negatives ####
+
+# FP - False Positive - Type I error
+# FN - False Negative - Type II error
+
+#### 2. Confusion Matrix ####
+#    Confusion Matrix: It is nothing but a tabular representation of Actual vs Predicted values. This helps us to find the accuracy of the model 
+#    and avoid overfitting. This is how it looks like:
+#    calculate the ACCURACY/PRECISION/RECALL of your model using:
+#    ACCURACY = (TP + TN)/(TP + TN + FP + FN)
+#    PRECISION = TP / (TP + FP)
+#    RECALL = TP / (TP + FN)   a.k.a sensitivity or true positive rate (TPR)
+#    F1 SCORE = 2 * Precision * Recall / (Precision + Recall)
+
+# Accuracy Paradox:
+# Accuracy can be higher for a model but not precise
+
+#### 3. Cumulative Accuracy Profile (CAP) - Gain Chart #### 
+# https://en.wikipedia.org/wiki/Cumulative_accuracy_profile 
+
+# The CAP of a model represents the cumulative number of positive outcomes along the y-axis versus the 
+# corresponding cumulative number of a classifying parameter along the x-axis. 
+# Larger the area under the curve of the model - better the model
+# a_p = area under perfect model and random model 
+# a_r = area under the model and random model 
+# AR = a_p/a_r  => AR closer to 1 for good models
+
+# Other way 
+# at X = 50%, if:
+# Y < 60% Rubbish 
+# 60% < Y < 80% Good  
+# 80% < Y < 90% Very Good  
+# 90% < Y < 100% Too good to be true - overfitting 
+
+
+
+#### ROC (Receiver Operating Characteristic) Curve ####
+#    ROC Curve: Receiver Operating Characteristic(ROC) summarizes the model’s performance by evaluating the trade offs between true positive rate (sensitivity)
+#    and false positive rate(1- specificity). For plotting ROC, it is advisable to assume p > 0.5 since we are more concerned about success rate. 
+#    ROC summarizes the predictive power for all possible values of p > 0.5.  The area under curve (AUC), referred to as index of accuracy(A) or 
+#    concordance index, is a perfect performance metric for ROC curve. Higher the area under curve, better the prediction power of the model.
+
+
+# The ROC curve is created by plotting the true positive rate (TPR) against the false positive rate (FPR) at various threshold settings. 
+# The true-positive rate is also known as sensitivity, recall or probability of detection[1] in machine learning. The false-positive rate 
+# is also known as the fall-out or probability of false alarm and can be calculated as (1 − specificity)
+
+      ## ROC Curve Sample:
+      library(ggplot2)
+      diamonds$is_expensive <- diamonds$price > 2400
+      is_test <- runif(nrow(diamonds)) > 0.75
+      train <- diamonds[is_test==FALSE,]
+      test <- diamonds[is_test==TRUE,]
+      
+      summary(fit <- glm(is_expensive ~ carat + cut + clarity, data=train))
+
+      library(ROCR)
+      
+      prob <- predict(fit, newdata=test, type="response")
+      pred <- prediction(prob, test$is_expensive)
+      perf <- performance(pred, measure = "tpr", x.measure = "fpr")
+      # I know, the following code is bizarre. Just go with it.
+      auc <- performance(pred, measure = "auc")
+      auc <- auc@y.values[[1]]
+      
+      roc.data <- data.frame(fpr=unlist(perf@x.values),
+                             tpr=unlist(perf@y.values),
+                             model="GLM")
+      ggplot(roc.data, aes(x=fpr, ymin=0, ymax=tpr)) +
+        geom_ribbon(alpha=0.2) +
+        geom_line(aes(y=tpr)) +
+        ggtitle(paste0("ROC Curve w/ AUC=", auc))
+
+# If your problem is linear, you should go for Logistic Regression or SVM.
+# If your problem is non linear, you should go for K-NN, Naive Bayes, Decision Tree or Random Forest.
+
+                                      ### Pros & Cons of Classification Models ####
+
+  # Logistic Regression
+# PRO: Probabilistic approach, gives informations about statistical significance of features 
+# CON: The Logistic Regression Assumptions
+
+  # K-NN 
+# PRO: Simple to understand, fast and efficient 
+# CON: Need to choose the number of neighbours k
+
+  # SVM
+# PRO: Performant, not biased by outliers, not sensitive to overfitting 
+# CON: Not appropriate for non linear problems, not the best choice for large number of features
+
+  # Kernel SVM
+# PRO: High performance on nonlinear problems, not # biased by outliers, not sensitive to overfitting 
+# CON: Not the best choice for large number of features, more complex
+
+  # Naive Bayes
+# PRO: Efficient, not biased by outliers, works on nonlinear problems, probabilistic approach 
+# CON: Based on the assumption that features have same statistical relevance
+
+  # Decision Tree Classification
+# PRO: Interpretability, no need for feature scaling, works on both linear / nonlinear problems 
+# CON: Poor results on too small datasets, overfitting can easily occur
+
+  # Random Forest Classification
+# PRO: Powerful and accurate, good performance on many problems, including non linear
+# CON: No interpretability, overfitting can easily occur, need to choose the number of trees
+
+
+
+                                              ######  ~~~ Clustering ~~~ #####
+
+library(ggplot2)
+library(data.table)
+library(dplyr)
+setwd("~/SWARIT/Udemy/Machine Learning A-Z Template Folder/Part 4 - Clustering/")
+
+
+                                            #### K-Means Clustering #####
+
+# STEPS:
+# 1 : Choose the number of K clusters
+# 2 : Select at random K points, the centroids (not necessarily from our dataset)
+# 3 : Assign each data point to the closest centroid => That forms K clusters ; according to the Euclidean distance function.
+# 4 : Compute and place the new centroid of each cluster
+# 5 : Reassign each data point to the new closest centroid. and repeat from step 4 if there are reassignments 
+
+# Choosing the right number of clusters:
+# WCSS (Within Cluster Sum of Squares) - computes the sum distances of points in a particular cluster
+# WCSS for multiple clusters are sum of WCSS for each cluster (for more that 2, its the euclidean distance)
+# use the elbow method (WCSS vs K) to determine what could be the best number of clusters
+
+
+# for 2 dimension data, it is simple sum of square method and for more than 2 it is euclidean distance method to 
+# calculate the WCSS
+
+# K-Means Clustering Code
+
+# Importing the dataset
+dataset = read.csv('Section 24 - K-Means Clustering/K_Means/K_Means/Mall_Customers.csv')
+head(dataset)
+dataset = dataset[4:5]
+
+# Using the elbow method to find the optimal number of clusters
+set.seed(6)
+wcss = vector()
+for (i in 1:20) wcss[i] = sum(kmeans(dataset, i)$withinss)
+wcss
+plot(1:20,
+     wcss,
+     type = 'b',
+     main = paste('The Elbow Method'),
+     xlab = 'Number of clusters',
+     ylab = 'WCSS')
+# 5 Clusters seems to be an optimal value
+
+# Fitting K-Means to the dataset
+set.seed(29)
+kmeans = kmeans(x = dataset, centers = 5)
+y_kmeans = kmeans$cluster
+
+# Visualising the clusters 
+library(cluster)
+clusplot(dataset,
+         y_kmeans,
+         lines = 0,
+         shade = TRUE,
+         color = TRUE,
+         labels = 2,
+         plotchar = FALSE,
+         span = TRUE,
+         main = paste('Clusters of customers'),
+         xlab = 'Annual Income',
+         ylab = 'Spending Score')
+
+
 
 
 
