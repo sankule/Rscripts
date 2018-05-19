@@ -1439,6 +1439,15 @@ setwd("~/SWARIT/Udemy/Machine Learning A-Z Template Folder/Part 4 - Clustering/"
 # 4 : Compute and place the new centroid of each cluster
 # 5 : Reassign each data point to the new closest centroid. and repeat from step 4 if there are reassignments 
 
+# K-means is all about the analysis-of-variance paradigm. ANOVA - both uni- and multivariate - is based on the fact that 
+# the sum of squared deviations about the grand centroid is comprised of such scatter about the group centroids and the 
+# scatter of those centroids about the grand one: 
+# SStotal=SSwithin+SSbetween. So, if SSwithin is minimized then SSbetween is maximized.
+
+# SS of deviations of some points about their centroid (arithmetic mean) is known to be directly related to the overall squared 
+# euclidean distance between the points: the sum of squared deviations from centroid is equal to the sum of pairwise squared 
+# Euclidean distances divided by the number of points.
+
 # Choosing the right number of clusters:
 # WCSS (Within Cluster Sum of Squares) - computes the sum distances of points in a particular cluster
 # WCSS for multiple clusters are sum of WCSS for each cluster (for more that 2, its the euclidean distance)
@@ -1471,6 +1480,8 @@ plot(1:20,
 # Fitting K-Means to the dataset
 set.seed(29)
 kmeans = kmeans(x = dataset, centers = 5)
+kmeans
+kmeans$
 y_kmeans = kmeans$cluster
 
 # Visualising the clusters 
@@ -1489,6 +1500,107 @@ clusplot(dataset,
 
 
 
+                                                      #### Hierarchical Clustering #####
+
+# Types:
+##### Agglomerative #####
+
+# Steps:
+# 1: Make each data point a cluster => forming N clusters, N is the number of data points 
+# 2: Take the two closest points and make them one cluster => forming N-1 cluster
+# 3: Take the two closest clusters and make them one cluster => forming N-2 cluster
+# 4: Repeat step-3 till there is just one huge cluster left
+
+# What is closest cluster ?
+# is it Euclidean distance of centroid or of some other point?
+# there are many ways to do this, like closest points, farthest points etc - approach depends on business problem 
+
+#### * Dendograms ####
+# it keeps the record of all the steps that we have taken in the agglomerative hierarchical clustering
+# the y-coord is based on the euclidean distance and we keep a thereshold of this distance to find the number clusters 
+# the number of vertical line the thereshold crosses is the number of optimum clusters
+
+
+# Hierarchical Clustering Code
+
+# Importing the dataset
+dataset = read.csv('Section 25 - Hierarchical Clustering/Hierarchical-Clustering/Hierarchical_Clustering/Mall_Customers.csv')
+dataset = dataset[4:5]
+
+# Using the dendrogram to find the optimal number of clusters
+dendrogram = hclust(d = dist(dataset, method = 'euclidean'), method = 'ward.D')
+dendrogram
+plot(dendrogram,
+     main = paste('Dendrogram'),
+     xlab = 'Customers',
+     ylab = 'Euclidean distances')
+
+# 5 seems to be the optimum number of clusters based on this dendogram 
+
+# Fitting Hierarchical Clustering to the dataset
+hc = hclust(d = dist(dataset, method = 'euclidean'), method = 'ward.D')
+y_hc = cutree(hc, 5)
+y_hc
+
+# Visualising the clusters
+library(cluster)
+clusplot(dataset,
+         y_hc,
+         lines = 0,
+         shade = TRUE,
+         color = TRUE,
+         labels= 2,
+         plotchar = FALSE,
+         span = TRUE,
+         main = paste('Clusters of customers'),
+         xlab = 'Annual Income',
+         ylab = 'Spending Score')
+
+
+##### Divisive ####
+# Reasearch 
+
+                                              ### Pros & Cons of Clustering Models ####
+
+    # K-Means
+# PRO: Simple to understand, easily adaptable, works well on small or large datasets,fast, efficient and performant
+# CON: Need to choose the number of clusters
+
+    # Hierarchical Clustering
+# PRO: The optimal number of clusters can be obtained by the model itself, practical visualisation with the dendrogram
+# CON: Not appropriate for large datasets
+
+
+                                                    ### ~~~  Association Rule Learning ~~~  ####
+
+# it answers the question: People who bought ___  also bought ____
+ 
+                                                        #### Apriori Intuition #####
+
+# Support(L) = no. of transactions containing L / total transactions  
+
+# Confidence(L1 -> L2) = no. of transactions containing L1 and L2 / transactions containing L1
+
+# Lift(L1 -> L2) = confidence(L1 -> L2) / support(L2)
+
+# Apriori intuition Code:
+
+# Data Preprocessing
+# install.packages('arules')
+library(arules)
+dataset = read.csv('Market_Basket_Optimisation.csv', header = FALSE)
+dataset = read.transactions('Market_Basket_Optimisation.csv', sep = ',', rm.duplicates = TRUE)
+summary(dataset)
+itemFrequencyPlot(dataset, topN = 10)
+
+# Training Apriori on the dataset
+rules = apriori(data = dataset, parameter = list(support = 0.004, confidence = 0.2))
+
+# Visualising the results
+inspect(sort(rules, by = 'lift')[1:10])
+
+
+                                                            #### Eclat Intuition #####
 
 
                                                                   ### TEST SVM  ####
