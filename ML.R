@@ -1572,6 +1572,10 @@ clusplot(dataset,
 
 
                                                     ### ~~~  Association Rule Learning ~~~  ####
+library(ggplot2)
+library(data.table)
+library(dplyr)
+setwd("~/SWARIT/Udemy/Machine Learning A-Z Template Folder/Part 5 - Association Rule Learning/")
 
 # it answers the question: People who bought ___  also bought ____
  
@@ -1582,25 +1586,98 @@ clusplot(dataset,
 # Confidence(L1 -> L2) = no. of transactions containing L1 and L2 / transactions containing L1
 
 # Lift(L1 -> L2) = confidence(L1 -> L2) / support(L2)
+# Lift is the improvement in the prediction - based on the original prediction
+
+# Steps:
+# Step 1: Set a minimum support and confidence
+# Step 2: Take all the subsets in transactions having higher support than the minimum support
+# Step 3: Take all the rules of these subsets having higher confidence than the minimum confidence
+# Step 4: Sort the rules by decreasing lift
+
 
 # Apriori intuition Code:
 
 # Data Preprocessing
 # install.packages('arules')
 library(arules)
-dataset = read.csv('Market_Basket_Optimisation.csv', header = FALSE)
-dataset = read.transactions('Market_Basket_Optimisation.csv', sep = ',', rm.duplicates = TRUE)
+dataset = read.csv('Section 28 - Apriori/Apriori-R/Apriori/Market_Basket_Optimisation.csv', header = FALSE)
+# each line correspond to one customer transaction
+# but the arules model does not take the data is this format - it needs the data to be in "SPARSE MATRIX" FORMAT 
+# each column is going to be the unique item sold 
+# and each customer will have a 0 or 1 denoting whether the item was bought or not
+
+dataset = read.transactions('Section 28 - Apriori/Apriori-R/Apriori/Market_Basket_Optimisation.csv', sep = ',', rm.duplicates = TRUE)
+# CLASS = "transactions"
+# reads the transcations and removes the duplicates
+# transactions class represents transaction data used for mining itemsets or rules.
 summary(dataset)
-itemFrequencyPlot(dataset, topN = 10)
+# transactions as itemMatrix in sparse format with
+# density means the fraction of zero's in the matrix 
+# size means number of transactions with no. of items in each  
+
+itemFrequencyPlot(dataset, topN = 20)
 
 # Training Apriori on the dataset
-rules = apriori(data = dataset, parameter = list(support = 0.004, confidence = 0.2))
 
+# 3*7/7500 - considering this to be the mimum support of any item 
+# considering items that are bought 3 times a day for a week / total number of transactions
+# confidence value is 0.8 => rule must be true atleast 80% time
+# with this confidence its very rare to get any rule - we will use 20% minimum confidence
+# we can change the parameters based on data, business problem and level of rules we are looking for 
+
+rules = apriori(data = dataset, parameter = list(support = 0.004, confidence = 0.2))
+rules
+# a reduced confidence will output a lot of rules but when sort by lift we can figure out 
+# rules which are significant
 # Visualising the results
-inspect(sort(rules, by = 'lift')[1:10])
+inspect(rules)
+inspect(sort(rules, by = 'lift')[1:15])
+# sometimes items with high support can be misleading. for eg: chocolate => beef
+# as chocolate has very high support 
 
 
                                                             #### Eclat Intuition #####
+
+# Support(L) = no. of transactions containing L / total transactions  
+# we just consider support in Eclat model
+# here L can be a set of items (consider atleast 2 items in the support)
+
+# Steps:
+# Step 1: Set a minimum support
+# Step 2: Take all the subsets in transactions having higher support than the minimum support
+# Step 3: sort there subsets by decreasing support
+
+# Eclat Code:
+# install.packages('arules')
+library(arules)
+dataset = read.csv('Section 29 - Eclat/Eclat/Eclat/Market_Basket_Optimisation.csv')
+dataset = read.transactions('Section 29 - Eclat/Eclat/Eclat/Market_Basket_Optimisation.csv', sep = ',', rm.duplicates = TRUE)
+summary(dataset)
+itemFrequencyPlot(dataset, topN = 30)
+
+# Training Eclat on the dataset
+# minlen = 2 as we want to consider atleast 2 items in the support calculation
+rules = eclat(data = dataset, parameter = list(support = 0.003, minlen = 2))
+rules # gives the number of sets not rules
+# Visualising the results
+inspect(sort(rules, by = 'support')[1:10])
+
+  
+                                                    ### ~~~  Reinforcement Learning ~~~  ####
+library(ggplot2)
+library(data.table)
+library(dplyr)
+setwd("~/SWARIT/Udemy/Machine Learning A-Z Template Folder/Part 6 - Reinforcement Learning/")
+
+# Reinforcement Learning is a branch of Machine Learning, also called Online Learning. It is used to solve
+# interacting problems where the data observed up to time t is considered to decide which action to take at 
+# time t + 1. Desired outcomes provide the AI with reward, undesired with punishment. Machines learn through trial and error.
+
+
+                                              #### Upper Bound Confidence (UCB) #####
+
+
+                                                #### Thompson Sampling #####
 
 
                                                                   ### TEST SVM  ####
