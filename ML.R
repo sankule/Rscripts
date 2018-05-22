@@ -701,6 +701,7 @@ points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'green4', 'red3'))
 #    ROC summarizes the predictive power for all possible values of p > 0.5.  The area under curve (AUC), referred to as index of accuracy(A) or 
 #    concordance index, is a perfect performance metric for ROC curve. Higher the area under curve, better the prediction power of the model.
 
+# Take a look at this: https://www.r-bloggers.com/roc-curves-in-two-lines-of-r-code/
 
 
                                                             #### K-NN  #####
@@ -1669,15 +1670,275 @@ library(data.table)
 library(dplyr)
 setwd("~/SWARIT/Udemy/Machine Learning A-Z Template Folder/Part 6 - Reinforcement Learning/")
 
+                                  # Reinforcement Learning
 # Reinforcement Learning is a branch of Machine Learning, also called Online Learning. It is used to solve
 # interacting problems where the data observed up to time t is considered to decide which action to take at 
 # time t + 1. Desired outcomes provide the AI with reward, undesired with punishment. Machines learn through trial and error.
 
 
+                                  # Multi Armed Bandit Problem
+# is a problem in which a fixed limited set of resources must be allocated between competing (alternative) choices 
+# in a way that maximizes their expected gain, when each choice's properties are only partially known at the time of 
+# allocation, and may become better understood as time passes or by allocating resources to the choice
+
+# The name comes from imagining a gambler at a row of slot machines (sometimes known as "one-armed bandits"), who has to 
+# decide which machines to play, how many times to play each machine and in which order to play them, and whether to continue
+# with the current machine or try a different machine.
+
+# Each machine has its probability distribution - but we dont know these distributions
+# we have to figure out, which of these distribution is the best - or best machine
+
+# Exploration and Exploitation:
+# In the problem, each machine provides a random reward from a probability distribution specific to that machine. 
+# The objective of the gambler is to maximize the sum of rewards earned through a sequence of lever pulls. The crucial 
+# tradeoff the gambler faces at each trial is between "exploitation" of the machine that has the highest expected payoff 
+# and "exploration" to get more information about the expected payoffs of the other machines.
+
+# => need to explore the machines and its distributions and while doing it also exploit the best ones to make max return
+
+# we will be working on 5 advertisements - and need to figure out which advertisement gives best conversion
+# one way to do that is to run an A/B test
+# A/B test can be used to find the best option - but A/B is pure exploration uniformally in random way
+# - and we dont exploit the best option
+# Reinforcement Learning -  Finding the best/optimal (exploiting) while in the process of exploration 
+
+# problem statement:
+
+# 1. We have d arms, for example arms are ads that we display to users each time they connect to a web page
+# 2. Each time a user connects to this web page, that makes a round
+# 3. At each round n, we choose one ad to display to the user.
+# 4. At each round n, ad i gives reward ri(n) in {0,1}:
+#    ri(n) = 1 if the user clicked on the ad i, 0 if the user didnt
+# 5. Our goal is to maximize the total reward we get over many rounds
+
+
                                               #### Upper Bound Confidence (UCB) #####
+
+# 1. assume same begining to all machines - assuming same distribution for all 
+# 2. for every distribution we assume a certain starting value 
+# 3. we make some confidence bounds - and its designed in a way that the confidence bound will include 
+#    the acutal expected return 
+# 4. first few rounds would be a trials and come up with a confidence bound(which is very high)
+# 5. we pick the machine with the highest confidence bounds 
+# 6. we start running the ads - and the observed averages will move towards the real mean and confidence bounds go down
+# 7. pick the machine with highest confidence bound again
+# 8. after a few rounds it becomes confident if few machines and vice versa
+
+# Math:
+# Step 1: At each round n, we consider two numbers for each ad i;
+#   Ni(n) - the number of times the ad i was selected up to round n,
+#   Ri(n) - the sum of rewards of the ad i upto round n.
+
+# Step 2: From these two number we compute:
+#  - the average reward of ad i upto round n
+#   r(n) = Ri(n)/Ni(n)
+
+# - the confidence interval of r(n) +- delta_i(n) at round n with
+#   delta_i(n) = {3/2 * log(n)/Ni(n)}^1/2
+
+# Step 3: we select the ad i that has maximum UCB r(n) + delta_i(n)
+
+
+# Upper Confidence Bound Code:
+
+# Importing the dataset
+# we want to find the ad which will get the most clicked 
+# 1 - means the user clicked on the ad and 0 means ad not clicked by the user
+dataset = read.csv('Section 32 - Upper Confidence Bound (UCB)/UCB/UCB/Ads_CTR_Optimisation.csv')
+head(dataset)
+str(dataset)
+
+
+    # Implementing Random Selection
+    N = 10000
+    d = 10
+    ads_selected = integer(0)
+    total_reward = 0
+    # random reward
+    for (n in 1:N) {
+      ad = sample(1:10, 1)
+      ads_selected = append(ads_selected, ad)
+      reward = dataset[n, ad]
+      total_reward = total_reward + reward
+    }
+    
+    # Visualising the results
+    hist(ads_selected,
+         col = 'blue',
+         main = 'Histogram of ads selections',
+         xlab = 'Ads',
+         ylab = 'Number of times each ad was selected')
+
+    # uniform histogram for random selection as expected  
+
+
+# Implementing UCB from scratch    
+dataset = read.csv('Section 32 - Upper Confidence Bound (UCB)/UCB/UCB/Ads_CTR_Optimisation.csv')
+head(dataset)
+str(dataset)    
+
+N = 10000
+d = 10
+ads_selected = integer(0)
+numbers_of_selections = integer(d)
+sums_of_rewards = integer(d)
+total_reward = 0
+# for each round
+for (n in 1:N) {
+  ad = 0
+  max_upper_bound = 0
+  # for each ad
+  for (i in 1:d) {
+    # check for 1 - when ad gets clicked
+    if (numbers_of_selections[i] > 0) {
+      average_reward = sums_of_rewards[i] / numbers_of_selections[i]
+      delta_i = sqrt(3/2 * log(n) / numbers_of_selections[i])
+      upper_bound = average_reward + delta_i
+    } else {
+      # when ad not clicked
+      upper_bound = 1e400
+    }
+    if (upper_bound > max_upper_bound) {
+      max_upper_bound = upper_bound
+      ad = i
+    }
+  }
+  # vector of ads that are selected in each round
+  ads_selected = append(ads_selected, ad)
+  
+  # number of selection of each ad
+  numbers_of_selections[ad] = numbers_of_selections[ad] + 1
+  
+  # reward = {0,1} 
+  reward = dataset[n, ad]
+  
+  # sum of rewards of each ad
+  sums_of_rewards[ad] = sums_of_rewards[ad] + reward
+  
+  # total reward
+  total_reward = total_reward + reward
+}
+
+
+
+# quick look at ads selected
+head(ads_selected, 500)
+tail(ads_selected, 500)
+
+# Visualising the results
+hist(ads_selected,
+     col = 'blue',
+     main = 'Histogram of ads selections',
+     xlab = 'Ads',
+     ylab = 'Number of times each ad was selected')
 
 
                                                 #### Thompson Sampling #####
+
+# UCB vs Thompson Sampling
+# thompson sampling is a probabilistic algorithm unlike the UCB which is deterministic algorithm
+# UCB require update at every round 
+# TS can accomodate delayed feedback
+# TS has better empirical evidence
+
+
+# same assumptions - we dont know the distribution of machines 
+# Thompson Sampling algorithm creates a distribution for each machine 
+# but we dont want to know/guess the distributions behind the machines 
+# we are constructing the distributions where we "think" the actually value might lie
+#  > auxiliary mechanism < 
+
+# the algorithm refines the distribution with each round
+
+dataset = read.csv('Section 32 - Upper Confidence Bound (UCB)/UCB/UCB/Ads_CTR_Optimisation.csv')
+head(dataset)
+str(dataset)
+
+
+    # Implementing Random Selection
+    N = 10000
+    d = 10
+    ads_selected = integer(0)
+    total_reward = 0
+    # random reward
+    for (n in 1:N) {
+      ad = sample(1:10, 1)
+      ads_selected = append(ads_selected, ad)
+      reward = dataset[n, ad]
+      total_reward = total_reward + reward
+    }
+    
+    # Visualising the results
+    hist(ads_selected,
+         col = 'blue',
+         main = 'Histogram of ads selections',
+         xlab = 'Ads',
+         ylab = 'Number of times each ad was selected')
+    
+    # uniform histogram for random selection as expected  
+
+
+# Thompson Sampling from scratch Code:
+dataset = read.csv('Section 32 - Upper Confidence Bound (UCB)/UCB/UCB/Ads_CTR_Optimisation.csv')
+head(dataset)
+str(dataset)
+
+N = 10000
+d = 10
+ads_selected = integer(0)
+numbers_of_rewards_1 = integer(d)
+numbers_of_rewards_0 = integer(d)
+total_reward = 0
+for (n in 1:N) {
+  ad = 0
+  max_random = 0
+  for (i in 1:d) {
+    random_beta = rbeta(n = 1,
+                        shape1 = numbers_of_rewards_1[i] + 1,
+                        shape2 = numbers_of_rewards_0[i] + 1)
+    if (random_beta > max_random) {
+      max_random = random_beta
+      ad = i
+    }
+  }
+  ads_selected = append(ads_selected, ad)
+  reward = dataset[n, ad]
+  if (reward == 1) {
+    numbers_of_rewards_1[ad] = numbers_of_rewards_1[ad] + 1
+  } else {
+    numbers_of_rewards_0[ad] = numbers_of_rewards_0[ad] + 1
+  }
+  total_reward = total_reward + reward
+}
+
+# Visualising the results
+hist(ads_selected,
+     col = 'blue',
+     main = 'Histogram of ads selections',
+     xlab = 'Ads',
+     ylab = 'Number of times each ad was selected')
+
+# better than UCB algorithm
+
+
+
+
+
+                                        ### ~~~  Natural Language Processing (NLP) ~~~  ####
+library(ggplot2)
+library(data.table)
+library(dplyr)
+setwd("~/SWARIT/Udemy/Machine Learning A-Z Template Folder/Part 7 - Natural Language Processing/")
+
+# Natural Language Processing (or NLP) is applying Machine Learning models to text and language. Teaching 
+# machines to understand what is said in spoken and written word is the focus of Natural Language Processing.
+
+# A very well-known model in NLP is the Bag of Words model. It is a model used to preprocess the texts to
+# classify before fitting the classification algorithms on the observations containing the texts.
+
+
+
+
 
 
                                                                   ### TEST SVM  ####
