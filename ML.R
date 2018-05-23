@@ -1925,6 +1925,7 @@ hist(ads_selected,
 
 
                                         ### ~~~  Natural Language Processing (NLP) ~~~  ####
+
 library(ggplot2)
 library(data.table)
 library(dplyr)
@@ -1936,8 +1937,74 @@ setwd("~/SWARIT/Udemy/Machine Learning A-Z Template Folder/Part 7 - Natural Lang
 # A very well-known model in NLP is the Bag of Words model. It is a model used to preprocess the texts to
 # classify before fitting the classification algorithms on the observations containing the texts.
 
+# Uses:
+# sentiment analysis
+# document summarization
+# predicting genre of book
+# question analysi
+# building speech recognition 
 
+# Mail NLP libraries
+# NLTK / Spacy / Stanford NLP / openNLP
+# we will use NLTK:  http://www.nltk.org/
 
+# Importing the dataset
+dataset_original <-
+  read.delim('Section 36 - Natural Language Processing/Natural-Language-Processing/Natural_Language_Processing/Restaurant_Reviews.tsv', 
+             quote = '', stringsAsFactors = FALSE)
+
+# Bag of Words Model
+
+# Cleaning the texts
+library(tm)
+library(SnowballC)
+corpus = VCorpus(VectorSource(dataset_original$Review))
+corpus = tm_map(corpus, content_transformer(tolower)) # to lower case 
+  as.character(corpus[[1]])
+corpus = tm_map(corpus, removeNumbers) # removing numbers
+  as.character(corpus[[841]])
+corpus = tm_map(corpus, removePunctuation) # removing punctuations
+  as.character(corpus[[1]])
+corpus = tm_map(corpus, removeWords, stopwords())  # removing non-relevant words (and, or, the, this .. etc)
+  as.character(corpus[[1]])
+corpus = tm_map(corpus, stemDocument) # getting the root word
+  as.character(corpus[[1]])
+corpus = tm_map(corpus, stripWhitespace) # removing whitespaces
+  as.character(corpus[[1]])
+
+# Creating the Bag of Words model
+dtm = DocumentTermMatrix(corpus)
+dtm = removeSparseTerms(dtm, 0.999)
+dataset = as.data.frame(as.matrix(dtm))
+dataset$Liked = dataset_original$Liked
+
+# Importing the dataset
+dataset = read.csv('Social_Network_Ads.csv')
+dataset = dataset[3:5]
+
+# Encoding the target feature as factor
+dataset$Liked = factor(dataset$Liked, levels = c(0, 1))
+
+# Splitting the dataset into the Training set and Test set
+# install.packages('caTools')
+library(caTools)
+set.seed(123)
+split = sample.split(dataset$Liked, SplitRatio = 0.8)
+training_set = subset(dataset, split == TRUE)
+test_set = subset(dataset, split == FALSE)
+
+# Fitting Random Forest Classification to the Training set
+# install.packages('randomForest')
+library(randomForest)
+classifier = randomForest(x = training_set[-692],
+                          y = training_set$Liked,
+                          ntree = 10)
+
+# Predicting the Test set results
+y_pred = predict(classifier, newdata = test_set[-692])
+
+# Making the Confusion Matrix
+cm = table(test_set[, 692], y_pred)
 
 
 
