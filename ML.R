@@ -1973,14 +1973,25 @@ corpus = tm_map(corpus, stripWhitespace) # removing whitespaces
   as.character(corpus[[1]])
 
 # Creating the Bag of Words model
+
+# https://en.wikipedia.org/wiki/Document-term_matrix  
+# A document-term matrix or term-document matrix is a mathematical matrix that describes the frequency
+# of terms that occur in a collection of documents. In a document-term matrix, rows correspond to documents
+# in the collection and columns correspond to terms.
+# converting corpus to document-term matrix
 dtm = DocumentTermMatrix(corpus)
-dtm = removeSparseTerms(dtm, 0.999)
-dataset = as.data.frame(as.matrix(dtm))
+dtm
+dtm = removeSparseTerms(dtm, 0.999)  # removing sparse terms from the document-term matrix
+dataset = as.data.frame(as.matrix(dtm)) # converting to a dataframe
+str(dataset)
+colnames(dataset)
+# attaching liked column 
 dataset$Liked = dataset_original$Liked
+head(dataset)
 
 # Importing the dataset
-dataset = read.csv('Social_Network_Ads.csv')
-dataset = dataset[3:5]
+# dataset = read.csv('Social_Network_Ads.csv')
+# dataset = dataset[3:5]
 
 # Encoding the target feature as factor
 dataset$Liked = factor(dataset$Liked, levels = c(0, 1))
@@ -1998,17 +2009,224 @@ test_set = subset(dataset, split == FALSE)
 library(randomForest)
 classifier = randomForest(x = training_set[-692],
                           y = training_set$Liked,
-                          ntree = 10)
+                          ntree = 50)
 
 # Predicting the Test set results
 y_pred = predict(classifier, newdata = test_set[-692])
 
 # Making the Confusion Matrix
 cm = table(test_set[, 692], y_pred)
+cm
 
 
 
-                                                                  ### TEST SVM  ####
+                                     ### ~~~  Deep Learning ~~~  ####
+
+library(ggplot2)
+library(data.table)
+library(dplyr)
+setwd("~/SWARIT/Udemy/Machine Learning A-Z Template Folder/Part 8 - Deep Learning/")
+
+
+# Deep Learning is the most exciting and powerful branch of Machine Learning. 
+# Deep Learning models can be used for a variety of complex tasks:
+#   
+# Artificial Neural Networks for Regression and Classification
+# Convolutional Neural Networks for Computer Vision
+# Recurrent Neural Networks for Time Series Analysis
+# Self Organizing Maps for Feature Extraction
+# Deep Boltzmann Machines for Recommendation Systems
+# Auto Encoders for Recommendation Systems
+
+
+                                          ### Artifical Neural Networks  ####
+
+
+# node (neuron) get the synapse (input) from independent variables 
+# input(synapses) should be standardized (0 mean & 1 SD)
+# output can be continuous / binary / categorical (multiple outputs)
+# synapses are assigned weights - weights are how neural network learn - which signals to pass along
+
+# what happens in the neuron ?
+# step1 : weighted sum of all synapses to the neuron is measured (SUM{Xi*Wi})
+# step2 : on this sum, the activation function is applied, and based on the result output is desided
+
+                              ###### ** Activation Functions ** #####
+
+### 1. Threshold Function ####
+# very straightfoward function - yes/no - x is the weighted sum of the synapses
+  # phi(x) = 1 if x>=0 
+  # phi(x) = 0 if x <0
+
+### 2. Sigmoid Function  ####
+# same as used in logistic regression
+  # phi(x) = 1 / {1 + e^-x}
+
+### 3. Rectifier Function ####
+# - one of the most popular function used in artifical Nueral Network
+  # phi(x) = max(x,0)
+
+
+### 4. Hyperbold Tangent (tanh) Function ####
+# similar to sigmoi function but here the function value goes below zero as well
+  # phi(x) = {1 - e^-2x}/{1 + e^-2x}
+
+# when to use ?
+# if DV is {0,1} we can use Thereshold or Sigmoid
+# Mostly Rectifier activation function is used in the hidden layer and sigmoid function in output layer
+
+
+# How does Neural Network Work?
+# not all synapses have a non zero weight in the hidden layer neurons - many have zero 
+# that depends on the training set and how the neuron understands the synapses
+# each neuron work independently - and the ensemble of all helps in the right prediction 
+
+# How does Neural Network Learn?
+# there are two approaches - lets say we want the computer to figure out whether the image is of cat/dog 
+# 1. in which we explicitely show that if the ears are pointy etc then its cat or if ears are down its a dog --
+# 2. in which we feed the images classified as dogs and cats and tell the computer to learn on its own 
+# we will see how the second approach works - we will look at the perceptron
+
+# we use cost function minimization using the gradient descent algorithm to find the optimal weights (coefficients)
+# using the backpropogation, adjusting weights each time and trying to minimize the cost function 
+
+# A list of cost functions used in neural networks, alongside applications:
+# https://stats.stackexchange.com/questions/154879/a-list-of-cost-functions-used-in-neural-networks-alongside-applications
+
+# Curse of Dimensionality:
+# Lets say we have 1000 data points in our training set and 5 independent variables
+# we have 5 neurons in the hidden layer = total of 25 weights to be calculated 
+# total combinations (brut force) of weights for all data points is 10^75
+# which is physically impossible to solve for
+
+# we use gradient descent to find the optimal weights (its the same as finding coefficients in regression)
+
+# Stochastic Gradient Descent:
+# gradient descent requires the cost function to be convex to find the minimum value
+# what if its not covex and we get to local minima?
+# to avoid this we use stochastic gradient descent
+# In stochastic gradient descent we dont take the all rows and plug them into the neural network like we 
+# do in the gradient descent. In this we take one row at a time - also called BATCH GRADIENT DESCENT
+
+# more Resources:
+
+# http://iamtrask.github.io/2015/07/27/python-network-part2/
+# https://www.cse.iitk.ac.in/users/sigml/lec/DeepLearningLib.pdf
+# http://neuralnetworksanddeeplearning.com/
+# http://deeplearning.net/tutorial/deeplearning.pdf
+# http://www.deeplearningbook.org/
+
+
+### ** Backpropagation** ####
+# it adjust all the weights simultaneously
+
+# Training the ANN with Stochastic Gradient Descent
+# Step 1: Randomly initialise the weights to small numbers close to 0 (not 0).
+# Step 2: Input the first observation of your dataset in the input layer, each feature in one input node.
+# Step 3: Forward-Propagation: from left to right, the neurons are activated in a way that the impact of each 
+#         neurons activation is limited by the weights. Propagate untill getting the predicted result y.
+# Step 4: Compare the predicted result to the actual result. Measure the generated error.
+# Step 5: Back-Propagation: from right to left, the error is back-propagated. Update the weights according 
+#         to how much they are responsible for the error. The learning rate decides by how much we update the weights.
+# Step 6: Repeat steps 1 to 5 and update the weights after each observation(Reinforcement Learning) Or:
+#         Repeat steps 1 to 5 but update the weights only after a batch of observations (Batch Learning)
+# Step 7: When the whole training set passed through the ANN, that makes an epoch. Redo more epochs.
+
+
+# Problem Description: - a classification problem 
+# data about back details and whether the customer leaves the back within 6 months
+# make a customer segmentation and figure out which customers are at the highest risk of exiting the bank 
+
+
+# Artificial Neural Network Code:
+# Importing the dataset
+dataset = read.csv('Section 39 - Artificial Neural Networks (ANN)/Artificial-Neural-Networks/Artificial_Neural_Networks/Churn_Modelling.csv')
+head(dataset)
+# subsetting only the requied features
+dataset = dataset[4:14]
+
+# Encoding the categorical variables as factors
+dataset$Geography = as.numeric(factor(dataset$Geography,
+                                      levels = c('France', 'Spain', 'Germany'),
+                                      labels = c(1, 2, 3)))
+dataset$Gender = as.numeric(factor(dataset$Gender,
+                                   levels = c('Female', 'Male'),
+                                   labels = c(1, 2)))
+
+# Splitting the dataset into the Training set and Test set
+# install.packages('caTools')
+library(caTools)
+set.seed(123)
+split = sample.split(dataset$Exited, SplitRatio = 0.8)
+training_set = subset(dataset, split == TRUE)
+test_set = subset(dataset, split == FALSE)
+
+# Feature Scaling
+training_set[-11] = scale(training_set[-11])
+test_set[-11] = scale(test_set[-11])
+
+# Fitting ANN to the Training set
+# install.packages('h2o')
+library(h2o)
+# connecting to h2o instance
+h2o.init(nthreads = -1)
+
+# using Rectifier activation function in the hidden layer
+# 6 nodes x 2 layers => usually the number of neuron in a hidden layer is taken 
+#                       as average of input and output features
+# training sample per iteration => batch size = -2 for auto-tuning
+model = h2o.deeplearning(y = 'Exited',
+                         training_frame = as.h2o(training_set),
+                         activation = 'Rectifier',
+                         hidden = c(6,6),
+                         epochs = 100,
+                         train_samples_per_iteration = -2)
+model
+
+# Predicting the Test set results
+y_pred = h2o.predict(model, newdata = as.h2o(test_set[-11]))
+y_pred
+y_pred = ifelse(y_pred > 0.5, 1, 0)
+y_pred = as.vector(y_pred)
+
+# Making the Confusion Matrix
+cm = table(test_set[, 11], y_pred)
+cm
+
+# accuracy in %
+100*(cm[1,1]+cm[2,2])/sum(cm)
+
+h2o.shutdown()
+
+                                        ### Convolutional Neural Networks  ####
+
+# still a work in progress for R:
+# https://community.h2o.ai/questions/325/when-will-deep-water-be-released-for-its-first-ver.html
+# https://github.com/h2oai/deepwater
+# https://community.h2o.ai/questions/452/rnncnn-with-h2o.html
+                                                                
+
+                                                ### ~~~  Dimensionality Reduction ~~~  ####
+
+library(ggplot2)
+library(data.table)
+library(dplyr)
+setwd("~/SWARIT/Udemy/Machine Learning A-Z Template Folder/Part 9 - Dimensionality Reduction/")
+
+### Principal Component Analysis (PCA) ####
+
+
+### Linear Discriminant Analysis (LDA)  ####
+
+
+### Kernel PCA  ####
+
+
+                                          ### ~~~  Model Selection and Boosting ~~~  ####
+
+
+
+### TEST SVM  ####
 data(iris)
 attach(iris)
 
