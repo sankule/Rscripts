@@ -2213,103 +2213,529 @@ library(data.table)
 library(dplyr)
 setwd("~/SWARIT/Udemy/Machine Learning A-Z Template Folder/Part 9 - Dimensionality Reduction/")
 
-### Principal Component Analysis (PCA) ####
+# Remember in Part 3 - Classification, we worked with datasets composed of only two independent variables. 
+# We did for two reasons:
+# 1.  Because we needed two dimensions to visualize better how Machine Learning models worked 
+#     (by plotting the prediction regions and the prediction boundary for each model).
+# 2.  Because whatever is the original number of our independent variables, we can often end up with two 
+#     independent variables by applying an appropriate Dimensionality Reduction technique.
+
+# There are two types of Dimensionality Reduction techniques:
+# 1.  Feature Selection
+# 2.  Feature Extraction
+
+# Feature Selection techniques are Backward Elimination, Forward Selection, Bidirectional Elimination,
+# Score Comparison and more. We covered these techniques in Part 2 - Regression.
+
+# In this part we will cover the following Feature Extraction techniques:
+#   Principal Component Analysis (PCA)
+#   Linear Discriminant Analysis (LDA)
+#   Kernel PCA
+#   Quadratic Discriminant Analysis (QDA)
 
 
-### Linear Discriminant Analysis (LDA)  ####
+                                    ### Principal Component Analysis (PCA) ####
+
+# In a nutshell:
+# From m independent variables of your dataset. PCA extracts p <= m new independent variables that 
+# explain the most variance of the dataset, regardless of dependent variable
+
+# The Fact that dependent variables are not considered, PCA is an "unsupervised" model 
 
 
-### Kernel PCA  ####
+# PCA Code:
+# Importing the dataset
+dataset = read.csv('Section 43 - Principal Component Analysis (PCA)/PCA/PCA/Wine.csv')
+head(dataset)
+str(dataset)
+
+# Splitting the dataset into the Training set and Test set
+# install.packages('caTools')
+library(caTools)
+set.seed(123)
+split = sample.split(dataset$Customer_Segment, SplitRatio = 0.8)
+training_set = subset(dataset, split == TRUE)
+test_set = subset(dataset, split == FALSE)
+
+# Feature Scaling - 
+training_set[-14] = scale(training_set[-14])
+test_set[-14] = scale(test_set[-14])
+
+# Applying PCA
+
+# install.packages('caret')
+library(lattice)
+library(caret)
+# install.packages('e1071')
+library(e1071)
+pca = preProcess(x = training_set[-14], method = 'pca', pcaComp = 2) #pcaComp = 2, as we want to create 2
+                                                                     # extracted features 
+pca
+training_set = predict(pca, training_set)
+  head(training_set)
+training_set = training_set[c(2, 3, 1)]
+  head(training_set)
+test_set = predict(pca, test_set)
+test_set = test_set[c(2, 3, 1)]
+
+# Fitting SVM to the Training set
+library(e1071)
+classifier = svm(formula = Customer_Segment ~ .,
+                 data = training_set,
+                 type = 'C-classification',
+                 kernel = 'linear')
+
+# Predicting the Test set results
+y_pred = predict(classifier, newdata = test_set[-3])
+
+# Making the Confusion Matrix
+cm = table(test_set[, 3], y_pred)
+cm
+
+# Visualising the Training set results
+library(ElemStatLearn)
+set = training_set
+X1 = seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.01)
+X2 = seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('PC1', 'PC2')
+y_grid = predict(classifier, newdata = grid_set)
+plot(set[, -3],
+     main = 'SVM (Training set)',
+     xlab = 'PC1', ylab = 'PC2',
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set, pch = '.', col = ifelse(y_grid == 2, 'deepskyblue', ifelse(y_grid == 1, 'springgreen3', 'tomato')))
+points(set, pch = 21, bg = ifelse(set[, 3] == 2, 'blue3', ifelse(set[, 3] == 1, 'green4', 'red3')))
+
+# Visualising the Test set results
+library(ElemStatLearn)
+set = test_set
+X1 = seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.01)
+X2 = seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('PC1', 'PC2')
+y_grid = predict(classifier, newdata = grid_set)
+plot(set[, -3], main = 'SVM (Test set)',
+     xlab = 'PC1', ylab = 'PC2',
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set, pch = '.', col = ifelse(y_grid == 2, 'deepskyblue', ifelse(y_grid == 1, 'springgreen3', 'tomato')))
+points(set, pch = 21, bg = ifelse(set[, 3] == 2, 'blue3', ifelse(set[, 3] == 1, 'green4', 'red3')))
+
+
+
+                                ### Linear Discriminant Analysis (LDA)  ####
+
+# In a nutshell:
+# From n independent variables of your dataset, LDA extracts p <= n new independent variables that
+# separate the most classes of the dependent variable
+
+# The Fact that dependent variables are considered, LDA is a "supervised" model 
+
+# LDA Code:
+
+# Importing the dataset
+dataset = read.csv('Section 44 - Linear Discriminant Analysis (LDA)/LDA/LDA/Wine.csv')
+head(dataset)
+str(dataset)
+
+# Splitting the dataset into the Training set and Test set
+# install.packages('caTools')
+library(caTools)
+set.seed(123)
+split = sample.split(dataset$Customer_Segment, SplitRatio = 0.8)
+training_set = subset(dataset, split == TRUE)
+test_set = subset(dataset, split == FALSE)
+
+# Feature Scaling
+training_set[-14] = scale(training_set[-14])
+test_set[-14] = scale(test_set[-14])
+
+# Applying LDA
+library(MASS)
+lda = lda(formula = Customer_Segment ~ ., data = training_set)
+  lda
+training_set = as.data.frame(predict(lda, training_set))
+  head(training_set)
+training_set = training_set[c(5, 6, 1)] # taking LD1 and LD2
+test_set = as.data.frame(predict(lda, test_set))
+test_set = test_set[c(5, 6, 1)]
+
+# Fitting SVM to the Training set
+# install.packages('e1071')
+library(e1071)
+classifier = svm(formula = class ~ .,
+                 data = training_set,
+                 type = 'C-classification',
+                 kernel = 'linear')
+
+classifier
+
+# Predicting the Test set results
+y_pred = predict(classifier, newdata = test_set[-3])
+
+# Making the Confusion Matrix
+cm = table(test_set[, 3], y_pred)
+cm
+
+# Visualising the Training set results
+library(ElemStatLearn)
+set = training_set
+X1 = seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.01)
+X2 = seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('x.LD1', 'x.LD2')
+y_grid = predict(classifier, newdata = grid_set)
+plot(set[, -3],
+     main = 'SVM (Training set)',
+     xlab = 'LD1', ylab = 'LD2',
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set, pch = '.', col = ifelse(y_grid == 2, 'deepskyblue', ifelse(y_grid == 1, 'springgreen3', 'tomato')))
+points(set, pch = 21, bg = ifelse(set[, 3] == 2, 'blue3', ifelse(set[, 3] == 1, 'green4', 'red3')))
+
+# Visualising the Test set results
+library(ElemStatLearn)
+set = test_set
+X1 = seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.01)
+X2 = seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('x.LD1', 'x.LD2')
+y_grid = predict(classifier, newdata = grid_set)
+plot(set[, -3], main = 'SVM (Test set)',
+     xlab = 'LD1', ylab = 'LD2',
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set, pch = '.', col = ifelse(y_grid == 2, 'deepskyblue', ifelse(y_grid == 1, 'springgreen3', 'tomato')))
+points(set, pch = 21, bg = ifelse(set[, 3] == 2, 'blue3', ifelse(set[, 3] == 1, 'green4', 'red3')))
+
+
+
+
+                                              ### Kernel PCA  ####
+
+# Both LDA and PCA deals where data is linearly separable. What if its not?
+# we use Kernel PCA
+
+# same fundamental as seen in kernel SVM, where we map the data to higher dimension 
+# and there we extract new principal components
+
+
+# Kernel PCA Code:
+
+# Importing the dataset
+dataset = read.csv('Section 45 - Kernel PCA/Kernel-PCA/Kernel_PCA/Social_Network_Ads.csv')
+head(dataset)
+dataset = dataset[, 3:5]
+
+# Splitting the dataset into the Training set and Test set
+# install.packages('caTools')
+library(caTools)
+set.seed(123)
+split = sample.split(dataset$Purchased, SplitRatio = 0.75)
+training_set = subset(dataset, split == TRUE)
+test_set = subset(dataset, split == FALSE)
+
+# Feature Scaling
+training_set[, 1:2] = scale(training_set[, 1:2])
+test_set[, 1:2] = scale(test_set[, 1:2])
+
+# Applying Kernel PCA
+# install.packages('kernlab')
+library(kernlab)
+kpca = kpca(~., data = training_set[-3], kernel = 'rbfdot', features = 2)
+
+  # Differene Kernels available for KPCA:
+# rbfdot - Radial Basis kernel function "Gaussian"
+# polydot - Polynomial kernel function
+# vanilladot -  Linear kernel function
+# tanhdot - Hyperbolic tangent kernel function
+# laplacedot - Laplacian kernel function
+# besseldot - Bessel kernel function
+# anovadot - ANOVA RBF kernel function
+# splinedot - Spline kernel
+
+training_set_pca = as.data.frame(predict(kpca, training_set))
+training_set_pca$Purchased = training_set$Purchased
+test_set_pca = as.data.frame(predict(kpca, test_set))
+test_set_pca$Purchased = test_set$Purchased
+
+# Fitting Logistic Regression to the Training set
+classifier = glm(formula = Purchased ~ .,
+                 family = binomial,
+                 data = training_set_pca)
+
+# Predicting the Test set results
+prob_pred = predict(classifier, type = 'response', newdata = test_set_pca[-3])
+y_pred = ifelse(prob_pred > 0.5, 1, 0)
+
+# Making the Confusion Matrix
+cm = table(test_set_pca[, 3], y_pred)
+cm
+
+# accuracy in %
+100*(cm[1,1]+cm[2,2])/sum(cm)
+
+# Visualising the Training set results
+# install.packages('ElemStatLearn')
+library(ElemStatLearn)
+set = training_set_pca
+X1 = seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.01)
+X2 = seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('V1', 'V2')
+prob_set = predict(classifier, type = 'response', newdata = grid_set)
+y_grid = ifelse(prob_set > 0.5, 1, 0)
+plot(set[, -3],
+     main = 'Logistic Regression (Training set)',
+     xlab = 'PC1', ylab = 'PC2',
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'springgreen3', 'tomato'))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'green4', 'red3'))
+
+# Visualising the Test set results
+# install.packages('ElemStatLearn')
+library(ElemStatLearn)
+set = test_set_pca
+X1 = seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.01)
+X2 = seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('V1', 'V2')
+prob_set = predict(classifier, type = 'response', newdata = grid_set)
+y_grid = ifelse(prob_set > 0.5, 1, 0)
+plot(set[, -3],
+     main = 'Logistic Regression (Test set)',
+     xlab = 'Age', ylab = 'Estimated Salary',
+     xlim = range(X1), ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'springgreen3', 'tomato'))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'green4', 'red3'))
+
 
 
                                           ### ~~~  Model Selection and Boosting ~~~  ####
 
+library(data.table)
+library(dplyr)
+library(ggplot2)
+setwd("~/SWARIT/Udemy/Machine Learning A-Z Template Folder/Part 10 - Model Selection & Boosting/")
 
+# After we built our Machine Learning models, some questions remained unanswered:
+#   
+# 1. How to deal with the bias variance tradeoff when building a model and evaluating its performance ?
+# 2. How to choose the optimal values for the hyperparameters (the parameters that are not learned) ?
+# 3. How to find the most appropriate Machine Learning model for my business problem ?
 
-### TEST SVM  ####
-data(iris)
-attach(iris)
+# In this part we will answer these questions thanks to Model Selection techniques including:
+# 1. k-Fold Cross Validation
+# 2. Grid Search
 
-## classification mode
-# default with factor response:
-model <- svm(Species ~ ., data = iris)
-model
-summary(model)
-
-# alternatively the traditional interface:
-x <- subset(iris, select = -Species)
-y <- Species
-model <- svm(x, y) 
-
-print(model)
-summary(model)
-
-# test with train data
-pred <- predict(model, x)
-# (same as:)
-pred <- fitted(model)
-
-# Check accuracy:
-table(pred, y)
-
-# compute decision values and probabilities:
-pred <- predict(model, x, decision.values = TRUE)
-attr(pred, "decision.values")[1:4,]
-
-# visualize (classes by color, SV by crosses):
-plot(cmdscale(dist(iris[,-5])),
-     col = as.integer(iris[,5]),
-     pch = c("o","+")[1:150 %in% model$index + 1])
-
-## try regression mode on two dimensions
-
-# create data
-x <- seq(0.1, 5, by = 0.05)
-y <- log(x) + rnorm(x, sd = 0.2)
-
-# estimate model and predict input values
-m   <- svm(x, y)
-new <- predict(m, x)
-
-# visualize
-plot(x, y)
-points(x, log(x), col = 2)
-points(x, new, col = 4)
-
-## density-estimation
-
-# create 2-dim. normal with rho=0:
-X <- data.frame(a = rnorm(1000), b = rnorm(1000))
-attach(X)
-
-# traditional way:
-m <- svm(X, gamma = 0.1)
-
-# formula interface:
-m <- svm(~., data = X, gamma = 0.1)
-# or:
-m <- svm(~ a + b, gamma = 0.1)
-
-# test:
-newdata <- data.frame(a = c(0, 4), b = c(0, 4))
-predict (m, newdata)
-
-# visualize:
-plot(X, col = 1:1000 %in% m$index + 1, xlim = c(-5,5), ylim=c(-5,5))
-points(newdata, pch = "+", col = 2, cex = 5)
-
-# weights: (example not particularly sensible)
-i2 <- iris
-levels(i2$Species)[3] <- "versicolor"
-summary(i2$Species)
-wts <- 100 / table(i2$Species)
-wts
-m <- svm(Species ~ ., data = i2, class.weights = wts)
+                                          ### K-Fold Cross Validation ####
 
 
 
+# Importing the dataset
+dataset = read.csv('Section 48 - Model Selection/Model-Selection/Model_Selection/Social_Network_Ads.csv')
+head(dataset)
+dataset = dataset[3:5]
 
-######  ~~~ TIME SERIES ~~~ #####
+# Encoding the target feature as factor
+dataset$Purchased = factor(dataset$Purchased, levels = c(0, 1))
+
+# Splitting the dataset into the Training set and Test set
+library(caTools)
+set.seed(123)
+split = sample.split(dataset$Purchased, SplitRatio = 0.75)
+training_set = subset(dataset, split == TRUE)
+test_set = subset(dataset, split == FALSE)
+
+# Feature Scaling
+training_set[-3] = scale(training_set[-3])
+test_set[-3] = scale(test_set[-3])
+
+# Fitting Kernel SVM to the Training set
+library(e1071)
+classifier = svm(formula = Purchased ~ .,
+                 data = training_set,
+                 type = 'C-classification',
+                 kernel = 'radial')
+
+# Predicting the Test set results
+y_pred = predict(classifier, newdata = test_set[-3])
+
+# Making the Confusion Matrix
+cm = table(test_set[, 3], y_pred)
+cm
+
+# accuracy in %
+100*(cm[1,1]+cm[2,2])/sum(cm)
+
+# Applying k-Fold Cross Validation
+library(caret)
+folds = createFolds(training_set$Purchased, k = 10) # 10 folds
+folds
+
+# list of 10 different test folds comprising of our dataset2 
+cv = lapply(folds, function(x) {
+  training_fold = training_set[-x, ] # 270 rows
+  test_fold = training_set[x, ] # 30 rows
+  classifier = svm(formula = Purchased ~ .,
+                   data = training_fold,
+                   type = 'C-classification',
+                   kernel = 'radial')
+  y_pred = predict(classifier, newdata = test_fold[-3])
+  cm = table(test_fold[, 3], y_pred)
+  accuracy = (cm[1,1] + cm[2,2]) / (cm[1,1] + cm[2,2] + cm[1,2] + cm[2,1])
+  return(accuracy)
+})
+
+cv # accuracies of all 10 different folds
+
+accuracy = mean(as.numeric(cv))
+accuracy*100 # better than single test-train kernel svm
+
+
+                                      #### Grid Search #####
+
+# improving the models by tweaking the hyperparameters
+# Grid search will help us determine the optimal values for these hyperparameters
+
+# we will use the "caret" package, which is the most used machine learning package used in R
+# it also gives the optimal values of the parameters for the model
+
+# available models:
+# http://topepo.github.io/caret/available-models.html
+
+# Importing the dataset
+dataset = read.csv('Section 48 - Model Selection/Model-Selection/Model_Selection/Social_Network_Ads.csv')
+dataset = dataset[3:5]
+
+# Encoding the target feature as factor
+dataset$Purchased = factor(dataset$Purchased, levels = c(0, 1))
+
+# Splitting the dataset into the Training set and Test set
+library(caTools)
+set.seed(123)
+split = sample.split(dataset$Purchased, SplitRatio = 0.75)
+training_set = subset(dataset, split == TRUE)
+test_set = subset(dataset, split == FALSE)
+
+# Feature Scaling
+training_set[-3] = scale(training_set[-3])
+test_set[-3] = scale(test_set[-3])
+
+# Fitting Kernel SVM to the Training set
+library(e1071)
+classifier = svm(formula = Purchased ~ .,
+                 data = training_set,
+                 type = 'C-classification',
+                 kernel = 'radial')
+
+# Predicting the Test set results
+y_pred = predict(classifier, newdata = test_set[-3])
+
+# Making the Confusion Matrix
+cm = table(test_set[, 3], y_pred)
+cm
+
+# accuracy in %
+100*(cm[1,1]+cm[2,2])/sum(cm)
+
+# Applying k-Fold Cross Validation
+library(caret)
+folds = createFolds(training_set$Purchased, k = 10)
+cv = lapply(folds, function(x) {
+  training_fold = training_set[-x, ]
+  test_fold = training_set[x, ]
+  classifier = svm(formula = Purchased ~ .,
+                   data = training_fold,
+                   type = 'C-classification',
+                   kernel = 'radial')
+  y_pred = predict(classifier, newdata = test_fold[-3])
+  cm = table(test_fold[, 3], y_pred)
+  accuracy = (cm[1,1] + cm[2,2]) / (cm[1,1] + cm[2,2] + cm[1,2] + cm[2,1])
+  return(accuracy)
+})
+accuracy = mean(as.numeric(cv))
+
+
+
+# Applying Grid Search to find the best parameters (also to compare model performance with k fold cv)
+# install.packages('caret')
+library(caret)
+classifier = caret::train(form = Purchased ~ ., data = training_set, method = 'svmRadial')
+classifier
+classifier$bestTune # optimal values
+
+
+
+
+                                                    #####  XGBoost ######
+
+# high performance 
+# fast execution speed
+# can keep the interpretation of the problem and the model 
+
+# we will use the same problem as we took in ANN where we saw 86% accuracy
+
+# For XGBoost, feature scaling is not required unlike the deep learning models
+# since XGBoost is gradient boosting algorithm for decision trees, scaling is not required
+
+# XGBoost Code:
+# Importing the dataset
+dataset = read.csv('Section 49 - XGBoost/XGBoost/XGBoost/Churn_Modelling.csv')
+dataset = dataset[4:14]
+
+# Encoding the categorical variables as factors
+dataset$Geography = as.numeric(factor(dataset$Geography,
+                                      levels = c('France', 'Spain', 'Germany'),
+                                      labels = c(1, 2, 3)))
+dataset$Gender = as.numeric(factor(dataset$Gender,
+                                   levels = c('Female', 'Male'),
+                                   labels = c(1, 2)))
+
+# Splitting the dataset into the Training set and Test set
+library(caTools)
+set.seed(123)
+split = sample.split(dataset$Exited, SplitRatio = 0.8)
+training_set = subset(dataset, split == TRUE)
+test_set = subset(dataset, split == FALSE)
+
+# Fitting XGBoost to the Training set
+library(xgboost)
+classifier = xgboost(data = as.matrix(training_set[-11]), label = training_set$Exited, nrounds = 10)
+classifier
+
+# Predicting the Test set results
+y_pred = predict(classifier, newdata = as.matrix(test_set[-11]))
+y_pred = ifelse(y_pred >= 0.5, 1, 0)
+
+# Making the Confusion Matrix
+cm = table(test_set[, 11], y_pred)
+cm
+
+# Applying k-Fold Cross Validation
+library(caret)
+folds = createFolds(training_set$Exited, k = 10)
+cv = lapply(folds, function(x) {
+  training_fold = training_set[-x, ]
+  test_fold = training_set[x, ]
+  classifier = xgboost(data = as.matrix(training_set[-11]), label = training_set$Exited, nrounds = 10)
+  y_pred = predict(classifier, newdata = as.matrix(test_fold[-11]))
+  y_pred = (y_pred >= 0.5)
+  cm = table(test_fold[, 11], y_pred)
+  accuracy = (cm[1,1] + cm[2,2]) / (cm[1,1] + cm[2,2] + cm[1,2] + cm[2,1])
+  return(accuracy)
+})
+
+accuracy = mean(as.numeric(cv))
+accuracy
+# better than ANN
+
+
+                                              ######  ~~~ TIME SERIES ~~~ #####
 
 # ARIMA Model >>> 
 # ARIMA(p,d,q). Here p,d, and q are the levels for each of the AR, I, and MA parts
