@@ -1166,6 +1166,14 @@ points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'green4', 'red3'))
 # https://en.wikipedia.org/wiki/ID3_algorithm
 
 
+#  GINI IMPURITY
+#  http://dni-institute.in/blogs/cart-decision-tree-gini-index-explained/
+#  https://en.wikipedia.org/wiki/Decision_tree_learning#Gini_impurity
+
+# Used by the CART (classification and regression tree) algorithm for classification trees, Gini impurity is a measure
+# of how often a randomly chosen element from the set would be incorrectly labeled if it was randomly labeled according 
+# to the distribution of labels in the subset
+
 # Decision Tree Classification
 
 # Importing the dataset
@@ -2332,6 +2340,14 @@ points(set, pch = 21, bg = ifelse(set[, 3] == 2, 'blue3', ifelse(set[, 3] == 1, 
 # separate the most classes of the dependent variable
 
 # The Fact that dependent variables are considered, LDA is a "supervised" model 
+
+# assumption: Linear separability and normality 
+# assumes a multivariate normal distribution for the predictors and so works well in case of continuous quantitative variables,
+# but fails when categorical variables are to be used as predictors. Besides, it requires linear
+# relationships between dependent and independent variables
+
+
+# http://www.saedsayad.com/lda.htm
 
 # LDA Code:
 
