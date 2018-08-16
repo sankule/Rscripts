@@ -907,8 +907,8 @@ points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'green4', 'red3'))
 # and we will get our NON-LINEAR SEPARATOR
 
 # PROBLEM?
-# Mapping data to a higher dimension then back again to lowe dimension can be highly Computing Intensive
-# For this problem we can use the KERNEL TR
+# Mapping data to a higher dimension then back again to lower dimension can be highly Computing Intensive
+# For this problem we can use the KERNEL TRICK
 
 # Map data into new space(Higher Dimension), then take the inner product of the new vectors. The image of the inner product of the data is the 
 # inner product of the images of the data
@@ -2869,8 +2869,15 @@ pacf(ts(ARIMAfit$residuals),main='PACF Residual')
 # all residuals inside the insignificant zone
 
 
-###
 
+######  ~~~ TENSORFLOW ~~~ #####
+library(tensorflow)
+install_tensorflow()
+datasets <- tf$contrib$learn$datasets
+mnist <- datasets$mnist$read_data_sets("MNIST-data", one_hot = TRUE)
+
+
+###
 
 ######  ~~~ RETICULATE ~~~ #####
 library(reticulate)
