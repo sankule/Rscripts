@@ -128,17 +128,47 @@ library(ISLR)
 
 fix(Boston)
 names(Boston)
-lm.fit=lm(medv~lstat)
-lm.fit=lm(medv~lstat,data=Boston)
+
+# Simple Linear Regression Fit (medv vs lstat)
+
+# attaching Boston Data
 attach(Boston)
+# lm.fit=lm(medv~lstat)
+# lm.fit=lm(medv~lstat,data=Boston)
 lm.fit=lm(medv~lstat)
 lm.fit
+
+
 summary(lm.fit)
+# Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1  => range of p-values associated with NULL Hypothesis
+
+
+# what all type of information can be extracted from lm.fit
 names(lm.fit)
+
+# Linear fit coefficients - can use function or $name -- same thing
 coef(lm.fit)
+lm.fit$coefficients
+
+# Obtain a confidence interval for the coefficient estimates --
 confint(lm.fit)
+
+# predict() function can be used to produce confidence intervals andpredict() prediction 
+# intervals for the prediction of medv for a given value of lstat.
+
+# the 95 % confidence interval associated with a lstat value of 10 is (24.47, 25.63)
+# and the 95 % prediction interval is (12.828, 37.28)
+# Confidence Interval --
 predict(lm.fit,data.frame(lstat=(c(5,10,15))), interval="confidence")
+
+# Prediction Interval -- 
 predict(lm.fit,data.frame(lstat=(c(5,10,15))), interval="prediction")
+
+# As expected, the confidence and prediction intervals are centered around the
+# same point (a predicted value of 25.05 for medv when lstat equals 10), but the latter are substantially wider.
+
+
+# Plotting Least Square Regression Line
 plot(lstat,medv)
 abline(lm.fit)
 abline(lm.fit,lwd=3)
@@ -146,15 +176,31 @@ abline(lm.fit,lwd=3,col="red")
 plot(lstat,medv,col="red")
 plot(lstat,medv,pch=20)
 plot(lstat,medv,pch="+")
+
 # Plot of all symbols
 plot(1:20,1:20,pch=1:20)
-par(mfrow=c(2,2))
-plot(lm.fit)
-plot(predict(lm.fit), residuals(lm.fit))
-plot(predict(lm.fit), rstudent(lm.fit))
-plot(hatvalues(lm.fit))
-which.max(hatvalues(lm.fit))
 
+# par(mfrow=c(2,2)) divides the plotting region into a 2 × 2 grid of panels.
+# par(mfrow=c(2,2))
+plot(lm.fit)
+
+                                                ##### + residuals ####
+# we can compute the residuals from a linear regression fit
+# using the residuals() function. The function rstudent() will return the residuals()
+residuals(lm.fit)
+plot(predict(lm.fit), residuals(lm.fit))
+
+                                      ##### + studentized residuals ####
+# studentized residuals, and we can use this function to plot the residuals rstudent()
+# against the fitted values.
+plot(predict(lm.fit), rstudent(lm.fit))
+
+# hatvalue for leverage values
+plot(hatvalues(lm.fit))
+
+# which.max() function identifies the index of the largest element of a which.max() vector.
+# In this case, it tells us which observation has the largest leverage statistic.
+which.max(hatvalues(lm.fit))
 
 
 
@@ -162,53 +208,88 @@ which.max(hatvalues(lm.fit))
 
 lm.fit=lm(medv~lstat+age,data=Boston)
 summary(lm.fit)
+# to fit all predictor variables
 lm.fit=lm(medv~.,data=Boston)
 summary(lm.fit)
+
+# summary(lm.fit)$sigma gives us the RSE
+summary(lm.fit)$sigma
+
+                                                        ### + VIF ####
 library(car)
 vif(lm.fit)
+
+# regression without Age
 lm.fit1=lm(medv~.-age,data=Boston)
 summary(lm.fit1)
+
+# Alternativery we can use update function
 lm.fit1=update(lm.fit, ~.-age)
 
-# Interaction Terms
 
+                                            #### + Interaction Terms #####
+
+# interaction term syntax is lstat:age. But,
+# The syntax lstat*age simultaneously includes lstat, age, and the interaction term lstat×age as predictors
+# it is a shorthand for lstat+age+lstat:age.
 summary(lm(medv~lstat*age,data=Boston))
 
-# Non-linear Transformations of the Predictors
+                                      #### +  Non-linear Transformations of the Predictors ####
 
+# we can create a predictor X2 using I(X^2) 
 lm.fit2=lm(medv~lstat+I(lstat^2))
 summary(lm.fit2)
+ # The near-zero p-value associated with the quadratic term suggests that it leads to an improved model.
+
+                                      ### + Anova ####
+# We use the anova() function to further quantify the extent to which the quadratic fit is superior to the linear fit.
 lm.fit=lm(medv~lstat)
 anova(lm.fit,lm.fit2)
+# Model 1 represents the linear submodel containing only one predictor, lstat, while Model 2 corresponds 
+# to the larger quadratic model that has two predictors, lstat and lstat2
+
+# The anova() function performs a hypothesis test comparing the two models. The null hypothesis is that the two models
+# fit the data equally well, and the alternative hypothesis is that the full model is superior.
+
+
 par(mfrow=c(2,2))
 plot(lm.fit2)
+
+                                              #### + Polynomial Fit #####
+# A better approach involves using the poly() function poly() to create the polynomial within lm(). 
 lm.fit5=lm(medv~poly(lstat,5))
 summary(lm.fit5)
+plot(lm.fit5)
+# this summary suggests that including additional polynomial terms, up to fifth order,
+# leads to an improvement in the model fit! However, further investigation of
+# the data reveals that no polynomial terms beyond fifth order have significant p-values in a regression fit.
+
+# Fitting medv vs Log(rm)
 summary(lm(medv~log(rm),data=Boston))
 
-# Qualitative Predictors
+
+
+###### Qualitative Predictors ###########
+# We will attempt to predict Sales (child car seat sales) in 400 locations based on a number of predictors.
+library(ISLR)
 
 fix(Carseats)
 names(Carseats)
+
+# The predictor Shelveloc takes on three possible values, Bad, Medium, and Good
+# Given a qualitative variable such as Shelveloc, R generates dummy variables automatically
+
 lm.fit=lm(Sales~.+Income:Advertising+Price:Age,data=Carseats)
 summary(lm.fit)
+
+# The contrasts() function returns the coding that R uses for the dummy variables.
 attach(Carseats)
 contrasts(ShelveLoc)
-
-# Writing Functions
-
-LoadLibraries
-LoadLibraries()
-LoadLibraries=function(){
-  library(ISLR)
-  library(MASS)
-  print("The libraries have been loaded.")
-}
-LoadLibraries
-LoadLibraries()
+?Contrasts
 
 
-# Chapter 4 Lab: Logistic Regression, LDA, QDA, and KNN
+
+######## ********* Chapter 4 Lab: Logistic Regression, LDA, QDA, and KNN ********* ###########
 
 # The Stock Market Data
 
@@ -336,7 +417,7 @@ table(glm.pred,test.Y)
 
 
 
-# Chaper 5 Lab: Cross-Validation and the Bootstrap
+######## ********* Chaper 5 Lab: Cross-Validation and the Bootstrap ********* ######## 
 
 # The Validation Set Approach
 
@@ -416,7 +497,7 @@ summary(lm(mpg~horsepower+I(horsepower^2),data=Auto))$coef
 
 
 
-# Chapter 6 Lab 1: Subset Selection Methods
+######## ********* Chapter 6 Lab 1: Subset Selection Methods  ********* ########
 
 # Best Subset Selection
 
@@ -594,7 +675,7 @@ summary(pls.fit)
 
 
 
-# Chapter 7 Lab: Non-linear Modeling
+######## ********* Chapter 7 Lab: Non-linear Modeling ********* ########
 
 library(ISLR)
 attach(Wage)
@@ -703,7 +784,7 @@ plot(gam.lr.s,se=T,col="green")
 
 
 
-# Chapter 8 Lab: Decision Trees
+######## ********* Chapter 8 Lab: Decision Trees ********* ########
 
 # Fitting Classification Trees
 
@@ -802,7 +883,7 @@ mean((yhat.boost-boston.test)^2)
 
 
 
-# Chapter 9 Lab: Support Vector Machines
+######## ********* Chapter 9 Lab: Support Vector Machines  ********* ########
 
 # Support Vector Classifier
 
@@ -915,7 +996,7 @@ table(pred.te, dat.te$y)
 
 
 
-# Chapter 10 Lab 1: Principal Components Analysis
+######## ********* Chapter 10 Lab 1: Principal Components Analysis ********* ########
 
 states=row.names(USArrests)
 states
