@@ -1,4 +1,7 @@
-# Chapter 2 Lab: Introduction to R
+# R lab codes from ISLR
+# Check Google docs for a summary of theory 
+
+####### ********* Chapter 2 Lab: Introduction to R ********* #######
 
 ##### Basic Commands #####
 
@@ -338,7 +341,7 @@ mean(glm.pred==Direction.2005)
 106/(106+76)
 predict(glm.fit,newdata=data.frame(Lag1=c(1.2,1.5),Lag2=c(1.1,-0.8)),type="response")
 
-# Linear Discriminant Analysis
+###### Linear Discriminant Analysis ######
 
 library(MASS)
 lda.fit=lda(Direction~Lag1+Lag2,data=Smarket,subset=train)
@@ -355,7 +358,7 @@ lda.pred$posterior[1:20,1]
 lda.class[1:20]
 sum(lda.pred$posterior[,1]>.9)
 
-# Quadratic Discriminant Analysis
+####### Quadratic Discriminant Analysis  ######
 
 qda.fit=qda(Direction~Lag1+Lag2,data=Smarket,subset=train)
 qda.fit
@@ -363,7 +366,7 @@ qda.class=predict(qda.fit,Smarket.2005)$class
 table(qda.class,Direction.2005)
 mean(qda.class==Direction.2005)
 
-# K-Nearest Neighbors
+####### K-Nearest Neighbors ######
 
 library(class)
 train.X=cbind(Lag1,Lag2)[train,]
