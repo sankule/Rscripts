@@ -27,15 +27,28 @@ x^2
 x=rnorm(50)
 x
 y=x+rnorm(50,mean=50,sd=.1)
+# correlation
 cor(x,y)
+
 set.seed(1303)
 rnorm(50)
 set.seed(3)
 y=rnorm(100)
+
+# meadn
 mean(y)
+
+# variance
 var(y)
+
+# standard deviatio
 sqrt(var(y))
 sd(y)
+
+
+
+
+
 
 ######## Graphics ########
 
@@ -52,6 +65,7 @@ x=1:10
 x
 x=seq(-pi,pi,length=50)
 y=x
+
 # outer product
 f=outer(x,y,function(x,y)cos(y)/(1+x^2))
 f
@@ -112,7 +126,8 @@ hist(mpg)
 hist(mpg,col=2)
 hist(mpg,col=2,breaks=15)
 pairs(Auto)
-# GRID of SCATTERPLOTS
+                  
+                                                ##### + Pair plot  ##### 
 pairs(~ mpg + displacement + horsepower + weight + acceleration, Auto)
 plot(horsepower,mpg)
 # Marking Point on plot from cursor
@@ -145,7 +160,6 @@ lm.fit
 summary(lm.fit)
 # Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1  => range of p-values associated with NULL Hypothesis
 
-
 # what all type of information can be extracted from lm.fit
 names(lm.fit)
 
@@ -153,10 +167,11 @@ names(lm.fit)
 coef(lm.fit)
 lm.fit$coefficients
 
+
 # Obtain a confidence interval for the coefficient estimates --
 confint(lm.fit)
 
-# predict() function can be used to produce confidence intervals andpredict() prediction 
+# predict() function can be used to produce confidence intervals prediction 
 # intervals for the prediction of medv for a given value of lstat.
 
 # the 95 % confidence interval associated with a lstat value of 10 is (24.47, 25.63)
